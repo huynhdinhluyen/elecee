@@ -3,7 +3,9 @@ package com.example.electrical_preorder_system_backend.entities;
 import com.example.electrical_preorder_system_backend.enums.ProductStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -20,6 +22,8 @@ import java.util.UUID;
 @Table(name = "products", indexes = {
         @Index(name = "idx_product_code", columnList = "product_code"),
 })
+@NoArgsConstructor
+@AllArgsConstructor
 @Getter
 @Setter
 public class Product {

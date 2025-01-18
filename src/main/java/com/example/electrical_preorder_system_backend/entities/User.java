@@ -5,7 +5,10 @@ import com.example.electrical_preorder_system_backend.enums.UserStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -21,6 +24,8 @@ import java.util.UUID;
         @Index(name = "idx_email", columnList = "email"),
         @Index(name = "idx_phone_number", columnList = "phone_number")
 })
+@NoArgsConstructor
+@AllArgsConstructor
 @Getter
 @Setter
 public class User {

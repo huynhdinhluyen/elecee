@@ -3,7 +3,9 @@ package com.example.electrical_preorder_system_backend.entities;
 import com.example.electrical_preorder_system_backend.enums.PaymentMethod;
 import com.example.electrical_preorder_system_backend.enums.PaymentStatus;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -18,6 +20,8 @@ import java.util.UUID;
 @Table(name = "payments", indexes = {
         @Index(name = "idx_order_id", columnList = "order_id")
 })
+@NoArgsConstructor
+@AllArgsConstructor
 @Getter
 @Setter
 public class Payment {

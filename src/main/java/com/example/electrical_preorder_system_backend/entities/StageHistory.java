@@ -2,7 +2,9 @@ package com.example.electrical_preorder_system_backend.entities;
 
 import com.example.electrical_preorder_system_backend.enums.StageStatus;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -14,6 +16,8 @@ import java.util.UUID;
 @Entity
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "stage_histories")
+@NoArgsConstructor
+@AllArgsConstructor
 @Getter
 @Setter
 public class StageHistory {
