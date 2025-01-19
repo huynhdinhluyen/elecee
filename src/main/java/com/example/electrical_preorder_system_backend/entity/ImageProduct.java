@@ -1,7 +1,6 @@
-package com.example.electrical_preorder_system_backend.entities;
+package com.example.electrical_preorder_system_backend.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,42 +9,28 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "campaigns")
+@Table(name = "image_products", indexes = {
+        @Index(name = "idx_product_id", columnList = "product_id"),
+})
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
-public class Campaign {
+public class ImageProduct {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(nullable = false)
-    private String name;
+    private String altText;
 
     @Column(nullable = false)
-    private LocalDateTime startDate;
-
-    @Column(nullable = false)
-    private LocalDateTime endDate;
-
-    @Column(nullable = false)
-    @Min(0)
-    private Integer minQuantity;
-
-    @Column(nullable = false)
-    @Min(0)
-    private Integer maxQuantity;
-
-    @Column(nullable = false)
-    @Min(0)
-    private BigDecimal totalAmount;
+    private String imageUrl;
 
     @Column(nullable = false)
     private boolean isDeleted = false;

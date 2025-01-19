@@ -1,5 +1,7 @@
-package com.example.electrical_preorder_system_backend.entities;
+package com.example.electrical_preorder_system_backend.entity;
 
+import com.example.electrical_preorder_system_backend.enums.PaymentMethod;
+import com.example.electrical_preorder_system_backend.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,35 +11,41 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "image_products", indexes = {
-        @Index(name = "idx_product_id", columnList = "product_id"),
+@Table(name = "payments", indexes = {
+        @Index(name = "idx_order_id", columnList = "order_id")
 })
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
-public class ImageProduct {
+public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(nullable = false)
-    private String name;
+    private BigDecimal amount;
 
     @Column(nullable = false)
-    private String imageUrl;
+    private LocalDateTime date;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private boolean isDeleted = false;
+    private PaymentMethod method;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
-    private Product product;
+    @JoinColumn(name = "order_id", nullable = false)
+    private Order order;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

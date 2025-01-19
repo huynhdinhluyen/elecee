@@ -1,8 +1,7 @@
-package com.example.electrical_preorder_system_backend.entities;
+package com.example.electrical_preorder_system_backend.entity;
 
-import com.example.electrical_preorder_system_backend.enums.PaymentMethod;
-import com.example.electrical_preorder_system_backend.enums.PaymentStatus;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,35 +16,43 @@ import java.util.UUID;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "payments", indexes = {
-        @Index(name = "idx_order_id", columnList = "order_id")
-})
+@Table(name = "campaigns")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
-public class Payment {
+public class Campaign {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(nullable = false)
-    private BigDecimal amount;
+    private String name;
 
     @Column(nullable = false)
-    private LocalDateTime date;
+    private LocalDateTime startDate;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private PaymentMethod method;
+    private LocalDateTime endDate;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private PaymentStatus status;
+    @Min(0)
+    private Integer minQuantity;
+
+    @Column(nullable = false)
+    @Min(0)
+    private Integer maxQuantity;
+
+    @Column(nullable = false)
+    @Min(0)
+    private BigDecimal totalAmount;
+
+    @Column(nullable = false)
+    private boolean isDeleted = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id", nullable = false)
-    private Order order;
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

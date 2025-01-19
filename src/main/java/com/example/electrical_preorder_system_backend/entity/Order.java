@@ -1,4 +1,4 @@
-package com.example.electrical_preorder_system_backend.entities;
+package com.example.electrical_preorder_system_backend.entity;
 
 import com.example.electrical_preorder_system_backend.enums.OrderStatus;
 import jakarta.persistence.*;

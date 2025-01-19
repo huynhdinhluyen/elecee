@@ -1,7 +1,7 @@
-package com.example.electrical_preorder_system_backend.entities;
+package com.example.electrical_preorder_system_backend.entity;
 
+import com.example.electrical_preorder_system_backend.enums.NotificationType;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,37 +15,28 @@ import java.util.UUID;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "campaign_stages", indexes = {
-        @Index(name = "idx_campaign_stage_campaign_id", columnList = "campaign_id")
+@Table(name = "notifications", indexes = {
+        @Index(name = "idx_user_id", columnList = "user_id")
 })
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
-public class CampaignStage {
+public class Notification {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String name;
+    private NotificationType type;
 
-    @Column(nullable = false)
-    private LocalDateTime startDate;
-
-    @Column(nullable = false)
-    private LocalDateTime endDate;
-
-    @Column(nullable = false)
-    @Min(0)
-    private Integer quantitySold;
-
-    @Column(nullable = false)
-    private boolean isDeleted = false;
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String content;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "campaign_id", nullable = false)
-    private Campaign campaign;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

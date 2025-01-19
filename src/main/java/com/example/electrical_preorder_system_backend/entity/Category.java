@@ -1,7 +1,7 @@
-package com.example.electrical_preorder_system_backend.entities;
+package com.example.electrical_preorder_system_backend.entity;
 
-import com.example.electrical_preorder_system_backend.enums.StageStatus;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,34 +11,31 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
-@Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "stage_histories")
+@Entity
+@Table(name = "categories")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
-public class StageHistory {
+public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private StageStatus preStatus;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private StageStatus posStatus;
+    @Size(min = 1, max = 50)
+    private String name;
 
     @Column(nullable = false)
-    private LocalDateTime transitionTime;
+    private boolean isDeleted = false;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "campaign_stage_id", nullable = false)
-    private CampaignStage campaignStage;
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Product> products = new ArrayList<>();
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

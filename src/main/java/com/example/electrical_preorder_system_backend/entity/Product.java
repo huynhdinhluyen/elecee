@@ -1,4 +1,4 @@
-package com.example.electrical_preorder_system_backend.entities;
+package com.example.electrical_preorder_system_backend.entity;
 
 import com.example.electrical_preorder_system_backend.enums.ProductStatus;
 import jakarta.persistence.*;
@@ -49,6 +49,7 @@ public class Product {
     private BigDecimal price;
 
     @Column
+    @Min(0)
     private Integer position;
 
     @Enumerated(EnumType.STRING)

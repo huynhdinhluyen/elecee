@@ -1,6 +1,7 @@
-package com.example.electrical_preorder_system_backend.entities;
+package com.example.electrical_preorder_system_backend.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,18 +11,18 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
-@EntityListeners(AuditingEntityListener.class)
 @Entity
-@Table(name = "categories")
+@EntityListeners(AuditingEntityListener.class)
+@Table(name = "campaign_stages", indexes = {
+        @Index(name = "idx_campaign_stage_campaign_id", columnList = "campaign_id")
+})
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
-public class Category {
+public class CampaignStage {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -30,10 +31,21 @@ public class Category {
     private String name;
 
     @Column(nullable = false)
+    private LocalDateTime startDate;
+
+    @Column(nullable = false)
+    private LocalDateTime endDate;
+
+    @Column(nullable = false)
+    @Min(0)
+    private Integer quantitySold;
+
+    @Column(nullable = false)
     private boolean isDeleted = false;
 
-    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Product> products = new ArrayList<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "campaign_id", nullable = false)
+    private Campaign campaign;
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

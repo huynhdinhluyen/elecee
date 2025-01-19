@@ -1,4 +1,4 @@
-package com.example.electrical_preorder_system_backend.entities;
+package com.example.electrical_preorder_system_backend.entity;
 
 import com.example.electrical_preorder_system_backend.enums.UserRole;
 import com.example.electrical_preorder_system_backend.enums.UserStatus;
@@ -55,9 +55,6 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role;
-
-    @Column()
-    private LocalDateTime dob;
 
     @Column(nullable = false)
     private boolean isVerified = false;
