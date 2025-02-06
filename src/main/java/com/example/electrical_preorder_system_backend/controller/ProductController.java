@@ -1,0 +1,98 @@
+package com.example.electrical_preorder_system_backend.controller;
+
+import com.example.electrical_preorder_system_backend.dto.request.CreateProductRequest;
+import com.example.electrical_preorder_system_backend.dto.request.UpdateProductRequest;
+import com.example.electrical_preorder_system_backend.dto.response.ApiResponse;
+import com.example.electrical_preorder_system_backend.dto.response.ProductDTO;
+import com.example.electrical_preorder_system_backend.entity.Product;
+import com.example.electrical_preorder_system_backend.exception.ResourceNotFoundException;
+import com.example.electrical_preorder_system_backend.service.product.IProductService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
+
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("${api.prefix}/products")
+public class ProductController {
+    private final IProductService productService;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse> getProducts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<ProductDTO> productPage = productService.getConvertedProducts(pageable);
+        return ResponseEntity.ok(new ApiResponse("Get products successfully", productPage));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse> getProductById(@PathVariable UUID id) {
+        try {
+            Product product = productService.getProductById(id);
+            return ResponseEntity.ok(new ApiResponse("Get product successfully", productService.convertToDto(product)));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
+        }
+    }
+
+    @GetMapping("/category")
+    public ResponseEntity<ApiResponse> getProductsByCategory(
+            @RequestParam String category,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            Pageable pageable = PageRequest.of(page, size);
+            Page<ProductDTO> productPage = productService.getProductsByCategory(category, pageable)
+                    .map(productService::convertToDto);
+            if (productPage.isEmpty()) {
+                return ResponseEntity.status(NOT_FOUND).body(new ApiResponse("No product found", null));
+            }
+            return ResponseEntity.ok(new ApiResponse("Get products successfully", productPage));
+        } catch (Exception e) {
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(new ApiResponse(e.getMessage(), null));
+        }
+    }
+
+    @PostMapping
+    public ResponseEntity<ApiResponse> createProduct(@RequestBody CreateProductRequest request) {
+        try {
+            Product newProduct = productService.addProduct(request);
+            return ResponseEntity.ok(new ApiResponse("Add product successfully", productService.convertToDto(newProduct)));
+        } catch (Exception e) {
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(new ApiResponse(e.getMessage(), null));
+        }
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<ApiResponse> updateProduct(@PathVariable UUID id, @RequestBody UpdateProductRequest request) {
+        try {
+            Product updatedProduct = productService.updateProduct(request, id);
+            return ResponseEntity.ok(new ApiResponse("Update product successfully", productService.convertToDto(updatedProduct)));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(409).body(new ApiResponse(e.getMessage(), null));
+        } catch (Exception e) {
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(new ApiResponse(e.getMessage(), null));
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse> deleteProduct(@PathVariable UUID id) {
+        try {
+            productService.deleteProductById(id);
+            return ResponseEntity.ok(new ApiResponse("Delete product successfully", null));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
+        }
+    }
+}
