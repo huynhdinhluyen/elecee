@@ -3,12 +3,12 @@ package com.example.electrical_preorder_system_backend.entity;
 import com.example.electrical_preorder_system_backend.enums.ProductStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
@@ -19,11 +19,13 @@ import java.util.UUID;
 
 @EntityListeners(AuditingEntityListener.class)
 @Entity
+@DynamicUpdate
 @Table(name = "products", indexes = {
         @Index(name = "idx_product_code", columnList = "product_code"),
+        @Index(name = "idx_product_name", columnList = "name"),
+        @Index(name = "idx_product_category_id", columnList = "category_id")
 })
 @NoArgsConstructor
-@AllArgsConstructor
 @Getter
 @Setter
 public class Product {
@@ -54,24 +56,33 @@ public class Product {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ProductStatus status;
+    private ProductStatus status = ProductStatus.AVAILABLE;
 
     @Column(nullable = false)
     private boolean isDeleted = false;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ImageProduct> imageProducts = new ArrayList<>();
 
-    @CreatedDate
+    @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @LastModifiedDate
+    @UpdateTimestamp
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    public Product(String productCode, String name, Integer quantity, String description, BigDecimal price, Integer position, Category category) {
+        this.productCode = productCode;
+        this.name = name;
+        this.quantity = quantity;
+        this.description = description;
+        this.price = price;
+        this.position = position;
+        this.category = category;
+    }
 }

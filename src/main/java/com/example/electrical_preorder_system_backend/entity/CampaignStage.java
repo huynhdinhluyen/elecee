@@ -16,7 +16,7 @@ import java.util.UUID;
 @Entity
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "campaign_stages", indexes = {
-        @Index(name = "idx_campaign_stage_campaign_id", columnList = "campaign_id")
+        @Index(name = "idx_campaign_stage_dates", columnList = "campaign_id, startDate, endDate")
 })
 @NoArgsConstructor
 @AllArgsConstructor

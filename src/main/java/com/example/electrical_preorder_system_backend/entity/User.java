@@ -21,6 +21,7 @@ import java.util.UUID;
 @EntityListeners(AuditingEntityListener.class)
 @Entity
 @Table(name = "users", indexes = {
+        @Index(name = "idx_user_name", columnList = "name"),
         @Index(name = "idx_email", columnList = "email"),
         @Index(name = "idx_phone_number", columnList = "phone_number")
 })
@@ -64,7 +65,7 @@ public class User {
 
     private LocalDateTime tokenExpires;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<Order> orders = new ArrayList<>();
 
     @CreatedDate
