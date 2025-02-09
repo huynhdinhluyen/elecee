@@ -6,6 +6,7 @@ import com.example.electrical_preorder_system_backend.dto.response.CategoryDTO;
 import com.example.electrical_preorder_system_backend.dto.response.ImageProductDTO;
 import com.example.electrical_preorder_system_backend.dto.response.ProductDTO;
 import com.example.electrical_preorder_system_backend.entity.Category;
+import com.example.electrical_preorder_system_backend.entity.ImageProduct;
 import com.example.electrical_preorder_system_backend.entity.Product;
 import com.example.electrical_preorder_system_backend.enums.ProductStatus;
 import com.example.electrical_preorder_system_backend.exception.AlreadyExistsException;
@@ -68,6 +69,16 @@ public class ProductService implements IProductService {
                 category
         );
         product.setStatus(ProductStatus.AVAILABLE);
+        if (request.getImageProducts() != null && !request.getImageProducts().isEmpty()) {
+            List<ImageProduct> imageProducts = request.getImageProducts().stream().map(dto -> {
+                ImageProduct imageProduct = new ImageProduct();
+                imageProduct.setAltText(dto.getAltText());
+                imageProduct.setImageUrl(dto.getImageUrl());
+                imageProduct.setProduct(product);
+                return imageProduct;
+            }).collect(Collectors.toList());
+            product.setImageProducts(imageProducts);
+        }
         return product;
     }
 
@@ -118,30 +129,27 @@ public class ProductService implements IProductService {
     }
 
     private Product updateExistingProduct(Product existingProduct, UpdateProductRequest request) {
+        // Cập nhật các trường cơ bản nếu được cung cấp
         if (request.getProductCode() != null && !request.getProductCode().isBlank()) {
             existingProduct.setProductCode(request.getProductCode());
         }
-
         if (request.getName() != null && !request.getName().isBlank()) {
             existingProduct.setName(request.getName());
         }
-
         if (request.getQuantity() != null) {
             existingProduct.setQuantity(request.getQuantity());
         }
-
         if (request.getDescription() != null && !request.getDescription().isBlank()) {
             existingProduct.setDescription(request.getDescription());
         }
-
         if (request.getPrice() != null) {
             existingProduct.setPrice(request.getPrice());
         }
-
         if (request.getPosition() != null) {
             existingProduct.setPosition(request.getPosition());
         }
 
+        // Nếu thông tin Category được cung cấp, cập nhật lại Category
         if (request.getCategory() != null &&
                 request.getCategory().getName() != null &&
                 !request.getCategory().getName().isBlank()) {
@@ -151,6 +159,41 @@ public class ProductService implements IProductService {
             }
             existingProduct.setCategory(category);
         }
+
+        // Xử lý ảnh: Chỉ cập nhật nếu request có trường imageProducts (không null)
+        if (request.getImageProducts() != null) {
+            // Tạo tập hợp các imageUrl từ danh sách mới được cung cấp
+            var newImageUrls = request.getImageProducts().stream()
+                    .map(dto -> dto.getImageUrl())
+                    .collect(Collectors.toSet());
+
+            existingProduct.getImageProducts().forEach(img -> {
+                if (!newImageUrls.contains(img.getImageUrl())) {
+                    img.setDeleted(true);
+                }
+            });
+
+            // Tạo tập hợp imageUrl của các ảnh hiện có (không bị xóa mềm)
+            var existingImageUrls = existingProduct.getImageProducts().stream()
+                    .filter(img -> !img.isDeleted())
+                    .map(img -> img.getImageUrl())
+                    .collect(Collectors.toSet());
+
+            // Với mỗi ảnh mới từ request, nếu imageUrl chưa tồn tại trong danh sách hiện tại (và không bị đánh dấu xóa mềm),
+            // thêm một đối tượng ImageProduct mới.
+            request.getImageProducts().forEach(dto -> {
+                if (!existingImageUrls.contains(dto.getImageUrl())) {
+                    // Tạo đối tượng ImageProduct mới
+                    var newImage = new ImageProduct();
+                    newImage.setAltText(dto.getAltText());
+                    newImage.setImageUrl(dto.getImageUrl());
+                    newImage.setDeleted(false);
+                    newImage.setProduct(existingProduct);
+                    existingProduct.getImageProducts().add(newImage);
+                }
+            });
+        }
+
         return existingProduct;
     }
 
