@@ -37,3 +37,7 @@ docker-compose.yml
 
 ### Properties ###
 application.properties
+
+### Environment ###
+.env
+

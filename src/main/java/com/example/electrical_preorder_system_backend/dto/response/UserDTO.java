@@ -21,10 +21,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @Setter
 @Getter
-@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@RequiredArgsConstructor
 public class UserDTO {
 
      UUID id;

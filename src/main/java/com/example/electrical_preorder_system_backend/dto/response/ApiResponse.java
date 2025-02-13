@@ -7,8 +7,6 @@ import lombok.RequiredArgsConstructor;
 
 @Data
 @AllArgsConstructor
-@RequiredArgsConstructor
-@NoArgsConstructor
 public class ApiResponse {
     private String message;
     private Object data;

@@ -48,7 +48,7 @@ public class UserService implements IUserService {
 
         //save user
         userRepository.save(user);
-        return new UserDTO();
+        return null;
 
 
 

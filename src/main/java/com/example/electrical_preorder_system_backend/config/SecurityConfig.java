@@ -30,30 +30,32 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
-        // disable Cross-Site Request Forgery and state in session
-        httpSecurity.csrf(AbstractHttpConfigurer::disable)
-                //handle unauthorized access attempts
-                .exceptionHandling(exception -> exception.authenticationEntryPoint(JwtUnauthorizedHandler))
-                //stateless session
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                //authorize requests
-                .authorizeHttpRequests(auth ->
-                        auth
-                                //permit all requests to the following URLs
-                                .requestMatchers(SECURED_URLS.toArray(String[]::new)).authenticated()
-                                //permit all other requests
-                                .anyRequest().permitAll()
-                )
-                .cors(httpSecurityCorsConfigurer -> httpSecurityCorsConfigurer.configurationSource(request -> {
-                    var cors = new CorsConfiguration();
-                    cors.setAllowedOrigins(List.of("*"));
-                    cors.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
-                    cors.setAllowedHeaders(List.of("*"));
-                    return cors;
-                }))
-                .oauth2Login(Customizer.withDefaults())
-                .formLogin(Customizer.withDefaults())
-                ;
+//        // disable Cross-Site Request Forgery and state in session
+//        httpSecurity.csrf(AbstractHttpConfigurer::disable)
+//                //handle unauthorized access attempts
+//                .exceptionHandling(exception -> exception.authenticationEntryPoint(JwtUnauthorizedHandler))
+//                //stateless session
+//                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+//                //authorize requests
+//                .authorizeHttpRequests(auth ->
+//                        auth
+//                                //permit all requests to the following URLs
+//                                .requestMatchers(SECURED_URLS.toArray(String[]::new)).authenticated()
+//                                //permit all other requests
+//                                .anyRequest().permitAll()
+//                )
+//                .cors(httpSecurityCorsConfigurer -> httpSecurityCorsConfigurer.configurationSource(request -> {
+//                    var cors = new CorsConfiguration();
+//                    cors.setAllowedOrigins(List.of("*"));
+//                    cors.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
+//                    cors.setAllowedHeaders(List.of("*"));
+//                    return cors;
+//                }))
+//                .oauth2Login(Customizer.withDefaults())
+//                .formLogin(Customizer.withDefaults())
+//                ;
+        httpSecurity.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+
 
         return httpSecurity.build();
     }
