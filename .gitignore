@@ -36,8 +36,5 @@ build/
 docker-compose.yml
 
 ### Properties ###
-.properties
-
-### Environment ###
+/src/main/resources/application.properties
 .env
-
