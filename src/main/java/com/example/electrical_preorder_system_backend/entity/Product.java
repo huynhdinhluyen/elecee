@@ -23,7 +23,8 @@ import java.util.UUID;
 @Table(name = "products", indexes = {
         @Index(name = "idx_product_code", columnList = "product_code"),
         @Index(name = "idx_product_name", columnList = "name"),
-        @Index(name = "idx_product_category_id", columnList = "category_id")
+        @Index(name = "idx_product_category_id", columnList = "category_id"),
+        @Index(name = "idx_product_slug", columnList = "slug")
 })
 @NoArgsConstructor
 @Getter
@@ -38,6 +39,9 @@ public class Product {
 
     @Column(nullable = false)
     private String name;
+
+    @Column(nullable = false, unique = true)
+    private String slug;
 
     @Column(nullable = false)
     @Min(0)

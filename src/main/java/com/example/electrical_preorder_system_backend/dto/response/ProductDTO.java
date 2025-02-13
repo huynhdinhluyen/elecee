@@ -14,6 +14,7 @@ public class ProductDTO {
     private UUID id;
     private String productCode;
     private String name;
+    private String slug;
     private Integer quantity;
     private String description;
     private BigDecimal price;
