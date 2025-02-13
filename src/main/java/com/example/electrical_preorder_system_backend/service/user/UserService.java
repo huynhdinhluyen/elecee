@@ -46,10 +46,11 @@ public class UserService implements IUserService {
         //endocde password
         user.setPassword(passwordEncoder.encode(userRegisterRequest.getPassword()));
 
-
-
-
         //save user
+        userRepository.save(user);
+        return new UserDTO();
+
+
 
     }
 
