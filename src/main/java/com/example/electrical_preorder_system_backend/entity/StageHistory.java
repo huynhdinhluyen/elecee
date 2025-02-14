@@ -15,7 +15,7 @@ import java.util.UUID;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "stage_histories", indexes = {
+@Table(name = "stage_history", indexes = {
         @Index(name = "idx_stage_history_transition", columnList = "campaign_stage_id, transitionTime")
 })
 @NoArgsConstructor

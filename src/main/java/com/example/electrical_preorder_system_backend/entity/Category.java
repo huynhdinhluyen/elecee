@@ -17,7 +17,7 @@ import java.util.UUID;
 
 @EntityListeners(AuditingEntityListener.class)
 @Entity
-@Table(name = "categories", indexes = {
+@Table(name = "category", indexes = {
         @Index(name = "idx_category_name", columnList = "name")
 })
 @NoArgsConstructor
