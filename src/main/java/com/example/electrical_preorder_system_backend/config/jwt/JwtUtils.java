@@ -2,10 +2,7 @@ package com.example.electrical_preorder_system_backend.config.jwt;
 
 import com.example.electrical_preorder_system_backend.entity.User;
 import com.example.electrical_preorder_system_backend.repository.UserRepository;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
@@ -14,8 +11,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
-import java.security.Key;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Component
@@ -52,27 +51,74 @@ public class JwtUtils {
         return false;
     }
 
-    public String getEmailFromToken(String jwtToken) {
-        SecretKey key = getSecretKey();
-        return Jwts.parser().decryptWith(key).build().parseSignedClaims(jwtToken).getPayload().getSubject();
+    public String generateToken(User user) {
+        Map<String,Object> claims = new HashMap<>();
+        claims.put("userId", user.getId());
+        try {
+            return Jwts.builder()
+                    .subject(getSubject(user))
+                    .issuer("electrical_preorder_system")
+                    .claims(claims)
+                    .signWith(getSecretKey(), Jwts.SIG.HS256)
+                    .issuedAt(new Date(System.currentTimeMillis()))
+                    .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
+                    .id(String.valueOf(UUID.randomUUID()))
+                    .compact();
+        } catch (Exception e) {
+            log.error("Error generating token: {}", e.getMessage());
+        }
+        return null;
     }
 
-    public String generateToken(String email) {
-        SecretKey key = getSecretKey();
-        User user = userRepository.findByEmail(email).orElseThrow();
+    public String generateVerificationToken(String email){
         return Jwts.builder()
                 .subject(email)
-                .issuer("electrical_preorder_system")
-                .claim("userId", user.getId())
-                .claim("username", user.getName())
-                .claim("role", user.getRole())
-                .signWith(key)
+                .issuer("elecee")
+                .signWith(getSecretKey(), Jwts.SIG.HS256)
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
+                .expiration(new Date(new Date().toInstant().plus(1, ChronoUnit.DAYS).toEpochMilli()))
                 .id(String.valueOf(UUID.randomUUID()))
                 .compact();
     }
 
+    //If login with Google, the subject will be the email
+    //If login with username and password, the subject will be the username
+    public static String getSubject(User user) {
+        String subject = user.getEmail();
+        if (subject == null || subject.isEmpty()) {
+            subject = user.getName();
+        }
+        return user.getEmail();
+    }
 
+    public Date getExpDateFromToken(String token){
+        try {
+            return Jwts
+                    .parser()
+                    .requireIssuer("elecee")
+                    .verifyWith(getSecretKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload().getExpiration();
+        } catch (Exception e) {
+            log.error("Error getting expiration date from token: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    public String getSubjectFromToken(String token) {
+        try {
+            return Jwts
+                    .parser()
+                    .requireIssuer("elecee")
+                    .verifyWith(getSecretKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload().getSubject();
+        } catch (Exception e) {
+            log.error("Error getting subject from token: {}", e.getMessage());
+        }
+        return null;
+    }
 
 }
