@@ -231,12 +231,30 @@ public class ProductService implements IProductService {
 
     @Override
     public ProductDTO convertToDto(Product product) {
-        ProductDTO dto = modelMapper.map(product, ProductDTO.class);
+        if (product == null) {
+            return null;
+        }
 
-        CategoryDTO categoryDto = new CategoryDTO();
-        categoryDto.setId(product.getCategory().getId());
-        categoryDto.setName(product.getCategory().getName());
-        dto.setCategory(categoryDto);
+        ProductDTO dto = new ProductDTO();
+        dto.setId(product.getId());
+        dto.setProductCode(product.getProductCode());
+        dto.setName(product.getName());
+        dto.setSlug(product.getSlug());
+        dto.setQuantity(product.getQuantity());
+        dto.setDescription(product.getDescription());
+        dto.setPrice(product.getPrice());
+        dto.setPosition(product.getPosition());
+        dto.setStatus(product.getStatus());
+        dto.setDeleted(product.isDeleted());
+        dto.setCreatedAt(product.getCreatedAt());
+        dto.setUpdatedAt(product.getUpdatedAt());
+
+        if (product.getCategory() != null) {
+            CategoryDTO categoryDto = new CategoryDTO();
+            categoryDto.setId(product.getCategory().getId());
+            categoryDto.setName(product.getCategory().getName());
+            dto.setCategory(categoryDto);
+        }
 
         List<ImageProductDTO> imageDtos = product.getImageProducts().stream()
                 .filter(ip -> !ip.isDeleted())
@@ -245,8 +263,10 @@ public class ProductService implements IProductService {
                     imgDto.setAltText(ip.getAltText());
                     imgDto.setImageUrl(ip.getImageUrl());
                     return imgDto;
-                }).collect(Collectors.toList());
+                })
+                .collect(Collectors.toList());
         dto.setImageProducts(imageDtos);
+
         return dto;
     }
 
