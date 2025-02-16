@@ -17,7 +17,7 @@ import java.util.UUID;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "payment", indexes = {
+@Table(name = "\"payment\"", indexes = {
         @Index(name = "idx_order_id", columnList = "order_id"),
         @Index(name = "idx_payment_date", columnList = "date")
 })

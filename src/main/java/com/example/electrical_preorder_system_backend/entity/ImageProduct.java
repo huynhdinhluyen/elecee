@@ -14,7 +14,7 @@ import java.util.UUID;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name = "image_product", indexes = {
+@Table(name = "\"image_product\"", indexes = {
         @Index(name = "idx_product_id", columnList = "product_id"),
 })
 @NoArgsConstructor
