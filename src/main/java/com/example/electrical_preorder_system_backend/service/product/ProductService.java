@@ -15,6 +15,7 @@ import com.example.electrical_preorder_system_backend.repository.CategoryReposit
 import com.example.electrical_preorder_system_backend.repository.ProductRepository;
 import com.example.electrical_preorder_system_backend.util.SlugUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 
 import static com.example.electrical_preorder_system_backend.util.SlugUtil.generateSlug;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductService implements IProductService {
@@ -281,28 +283,33 @@ public class ProductService implements IProductService {
         return uniqueSlug;
     }
 
-    // Utility method to adjust positions for active products when a product is inserted or updated with a new position.
     private void adjustPositions(Product product, int newPosition) {
-        // Retrieve all active products sorted by position (and created_at as tie-breaker)
-        List<Product> activeProducts = productRepository.findActiveProductsSorted(Pageable.unpaged()).getContent();
-        // Remove the current product if present
-        activeProducts.removeIf(p -> p.getId().equals(product.getId()));
-        // Clamp newPosition between 1 and activeProducts.size() + 1 (1-indexed)
-        if (newPosition < 1) {
-            newPosition = 1;
-        } else if (newPosition > activeProducts.size() + 1) {
-            newPosition = activeProducts.size() + 1;
-        }
-        // Insert product at new position (0-indexed insertion)
-        activeProducts.add(newPosition - 1, product);
-        // Reassign positions for all products in the list
-        int pos = 1;
-        for (Product p : activeProducts) {
-            if (p.getPosition() == null || !p.getPosition().equals(pos)) {
-                p.setPosition(pos);
-                productRepository.save(p);
+        try {
+            // Retrieve all active products sorted by position (and created_at as a tie-breaker)
+            List<Product> activeProducts = productRepository.findActiveProductsSorted(Pageable.unpaged()).getContent();
+            // Remove the current product if present
+            activeProducts.removeIf(p -> p.getId().equals(product.getId()));
+
+            // Clamp newPosition between 1 and activeProducts.size() + 1 (1-indexed)
+            if (newPosition < 1) {
+                newPosition = 1;
+            } else if (newPosition > activeProducts.size() + 1) {
+                newPosition = activeProducts.size() + 1;
             }
-            pos++;
+            // Insert product at new position (0-indexed insertion)
+            activeProducts.add(newPosition - 1, product);
+
+            // Reassign positions for all products in the list
+            int pos = 1;
+            for (Product p : activeProducts) {
+                if (p.getPosition() == null || !p.getPosition().equals(pos)) {
+                    p.setPosition(pos);
+                    productRepository.save(p);
+                }
+                pos++;
+            }
+        } catch (Exception ex) {
+            log.error("Error adjusting product positions for product ID {}: {}", product.getId(), ex.getMessage(), ex);
         }
     }
 }
