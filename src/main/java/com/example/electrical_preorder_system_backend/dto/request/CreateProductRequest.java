@@ -1,13 +1,10 @@
 package com.example.electrical_preorder_system_backend.dto.request;
 
 import com.example.electrical_preorder_system_backend.dto.response.CategoryDTO;
-import com.example.electrical_preorder_system_backend.dto.response.ImageProductDTO;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 public class CreateProductRequest {
@@ -25,5 +22,4 @@ public class CreateProductRequest {
     private Integer position;
     @NotNull
     private CategoryDTO category;
-    private List<ImageProductDTO> imageProducts = new ArrayList<>();
 }

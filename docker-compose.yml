@@ -15,6 +15,19 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  redis:
+    image: redis
+    command: [ "redis-server", "--port", "10234" ]
+    restart: always
+    ports:
+      - "10234:10234"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-p", "10234", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   server:
     build:
       context: .
@@ -23,8 +36,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       - POSTGRES_URL=jdbc:postgresql://db:5432/electrical_preorder_system
+      - SPRING_REDIS_CONNECTION_HOST=redis-10234.c252.ap-southeast-1-1.ec2.redns.redis-cloud.com
+      - SPRING_REDIS_CONNECTION_PORT=10234
+      - SPRING_REDIS_CONNECTION_PASSWORD=RF2IZeD7pL2SzpDveWfO9reeo3fwhI4V
+      - SPRING_CACHE_TYPE=redis
     develop:
       watch:
         - action: rebuild

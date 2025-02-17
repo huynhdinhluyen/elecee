@@ -20,7 +20,7 @@ import java.util.UUID;
 
 @EntityListeners(AuditingEntityListener.class)
 @Entity
-@Table(name = "users", indexes = {
+@Table(name = "\"user\"", indexes = {
         @Index(name = "idx_user_name", columnList = "name"),
         @Index(name = "idx_email", columnList = "email"),
         @Index(name = "idx_phone_number", columnList = "phone_number")
