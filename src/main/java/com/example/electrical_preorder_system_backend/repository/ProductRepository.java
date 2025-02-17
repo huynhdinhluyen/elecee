@@ -15,8 +15,6 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
     boolean existsBySlug(String slug);
 
-    Product findByProductCode(String productCode);
-
     @Query(value = "SELECT * FROM product " +
             "WHERE is_deleted = false " +
             "ORDER BY " +

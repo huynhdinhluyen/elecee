@@ -1,5 +1,4 @@
 package com.example.electrical_preorder_system_backend.service.product;
-
 import com.example.electrical_preorder_system_backend.dto.request.CreateProductRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UpdateProductRequest;
 import com.example.electrical_preorder_system_backend.dto.response.CategoryDTO;
@@ -13,23 +12,21 @@ import com.example.electrical_preorder_system_backend.exception.AlreadyExistsExc
 import com.example.electrical_preorder_system_backend.exception.ResourceNotFoundException;
 import com.example.electrical_preorder_system_backend.repository.CategoryRepository;
 import com.example.electrical_preorder_system_backend.repository.ProductRepository;
+import com.example.electrical_preorder_system_backend.service.CloudinaryService;
 import com.example.electrical_preorder_system_backend.util.SlugUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import static com.example.electrical_preorder_system_backend.util.SlugUtil.generateSlug;
 
 @Slf4j
 @Service
@@ -37,15 +34,16 @@ import static com.example.electrical_preorder_system_backend.util.SlugUtil.gener
 public class ProductService implements IProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
-    private final ModelMapper modelMapper;
+    private final CloudinaryService cloudinaryService;
 
     @Override
     @CacheEvict(value = "products", allEntries = true)
-    public Product addProduct(CreateProductRequest request) {
+    public Product addProduct(CreateProductRequest request, List<MultipartFile> files) {
         if (productRepository.existsByProductCode(request.getProductCode().trim())) {
             throw new AlreadyExistsException("Product code '" + request.getProductCode() + "' already exists.");
         }
 
+        // Lấy hoặc tạo mới Category
         String categoryName = request.getCategory().getName().trim();
         Category category = categoryRepository.findByName(categoryName);
         if (category == null) {
@@ -53,23 +51,9 @@ public class ProductService implements IProductService {
             category = categoryRepository.save(category);
         }
 
-        CategoryDTO categoryDto = new CategoryDTO();
-        categoryDto.setId(category.getId());
-        categoryDto.setName(category.getName());
-        request.setCategory(categoryDto);
-
-        Product product = createProduct(request, category);
-        product = productRepository.save(product);
-
-        if (request.getPosition() != null) {
-            adjustPositions(product, request.getPosition());
-        }
-        return product;
-    }
-
-    private Product createProduct(CreateProductRequest request, Category category) {
+        // Tạo đối tượng Product mới
         Product product = new Product(
-                request.getProductCode().trim(),
+                request.getProductCode(),
                 request.getName().trim(),
                 request.getQuantity(),
                 request.getDescription(),
@@ -80,15 +64,26 @@ public class ProductService implements IProductService {
         product.setStatus(ProductStatus.AVAILABLE);
         product.setSlug(generateUniqueSlug(product.getName()));
 
-        if (request.getImageProducts() != null && !request.getImageProducts().isEmpty()) {
-            List<ImageProduct> imageProducts = request.getImageProducts().stream().map(dto -> {
-                ImageProduct imageProduct = new ImageProduct();
-                imageProduct.setAltText(dto.getAltText());
-                imageProduct.setImageUrl(dto.getImageUrl());
-                imageProduct.setProduct(product);
-                return imageProduct;
+        // Xử lý file upload: Upload từng file qua Cloudinary trong tầng service
+        if (files != null && !files.isEmpty()) {
+            Product finalProduct = product;
+            List<ImageProduct> imageProducts = files.stream().map(file -> {
+                // Thực hiện upload file qua CloudinaryService
+                String imageUrl = cloudinaryService.uploadFile(file);
+                ImageProduct img = new ImageProduct();
+                img.setAltText(file.getOriginalFilename());
+                img.setImageUrl(imageUrl);
+                img.setProduct(finalProduct);
+                return img;
             }).collect(Collectors.toList());
             product.setImageProducts(imageProducts);
+        }
+
+        product = productRepository.save(product);
+
+        // Điều chỉnh vị trí nếu cần
+        if (request.getPosition() != null) {
+            adjustPositions(product, request.getPosition());
         }
         return product;
     }
@@ -105,20 +100,6 @@ public class ProductService implements IProductService {
     }
 
     @Override
-    public Page<Product> getProductsByName(String name, Pageable pageable) {
-        return productRepository.findByNameContainingIgnoreCaseAndIsDeletedFalse(name, pageable);
-    }
-
-    @Override
-    public Product getProductByProductCode(String productCode) {
-        Product product = productRepository.findByProductCode(productCode.trim());
-        if (product == null || product.isDeleted()) {
-            throw new ResourceNotFoundException("Product not found with code: " + productCode);
-        }
-        return product;
-    }
-
-    @Override
     public Product getProductById(UUID id) {
         return productRepository.findById(id)
                 .filter(p -> !p.isDeleted())
@@ -128,19 +109,19 @@ public class ProductService implements IProductService {
     @Override
     @Transactional
     @CacheEvict(value = "products", allEntries = true)
-    public Product updateProduct(UpdateProductRequest request, UUID id) {
+    public Product updateProduct(UpdateProductRequest request, UUID id, List<MultipartFile> files) {
         return productRepository.findById(id)
                 .map(existingProduct -> {
                     if (existingProduct.isDeleted()) {
                         throw new IllegalStateException("Product has been deleted and cannot be updated.");
                     }
-                    return updateExistingProduct(existingProduct, request);
+                    return updateExistingProduct(existingProduct, request, files);
                 })
                 .map(productRepository::save)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found!"));
     }
 
-    private Product updateExistingProduct(Product existingProduct, UpdateProductRequest request) {
+    private Product updateExistingProduct(Product existingProduct, UpdateProductRequest request, List<MultipartFile> files) {
         if (request.getProductCode() != null && !request.getProductCode().isBlank()) {
             existingProduct.setProductCode(request.getProductCode().trim());
         }
@@ -158,15 +139,12 @@ public class ProductService implements IProductService {
         if (request.getPrice() != null) {
             existingProduct.setPrice(request.getPrice());
         }
-
         if (request.getPosition() != null) {
             int newPosition = request.getPosition();
             if (!Integer.valueOf(newPosition).equals(existingProduct.getPosition())) {
                 adjustPositions(existingProduct, newPosition);
             }
         }
-
-        // Update category if provided
         if (request.getCategory() != null &&
                 request.getCategory().getName() != null &&
                 !request.getCategory().getName().isBlank()) {
@@ -178,37 +156,22 @@ public class ProductService implements IProductService {
             existingProduct.setCategory(category);
         }
 
-        // Process image products: Soft-delete removed images and add new images if provided
-        if (request.getImageProducts() != null) {
-            Set<String> newImageUrls = request.getImageProducts().stream()
-                    .map(ImageProductDTO::getImageUrl)
-                    .collect(Collectors.toSet());
-
-            // Mark existing images as deleted if not present in new request
-            existingProduct.getImageProducts().forEach(img -> {
-                if (!newImageUrls.contains(img.getImageUrl())) {
-                    img.setDeleted(true);
-                }
-            });
-
-            // Collect active (non-deleted) image URLs from existing product
-            Set<String> existingActiveImageUrls = existingProduct.getImageProducts().stream()
-                    .filter(img -> !img.isDeleted())
-                    .map(ImageProduct::getImageUrl)
-                    .collect(Collectors.toSet());
-
-            // Add new images from the request if not already present
-            request.getImageProducts().forEach(dto -> {
-                if (!existingActiveImageUrls.contains(dto.getImageUrl())) {
-                    ImageProduct newImage = new ImageProduct();
-                    newImage.setAltText(dto.getAltText());
-                    newImage.setImageUrl(dto.getImageUrl());
-                    newImage.setDeleted(false);
-                    newImage.setProduct(existingProduct);
-                    existingProduct.getImageProducts().add(newImage);
-                }
-            });
+        if (files != null && !files.isEmpty()) {
+            if (existingProduct.getImageProducts() != null) {
+                existingProduct.getImageProducts().forEach(img -> img.setDeleted(true));
+            }
+            List<ImageProduct> newImages = files.stream().map(file -> {
+                String imageUrl = cloudinaryService.uploadFile(file);
+                ImageProduct newImage = new ImageProduct();
+                newImage.setAltText(file.getOriginalFilename());
+                newImage.setImageUrl(imageUrl);
+                newImage.setDeleted(false);
+                newImage.setProduct(existingProduct);
+                return newImage;
+            }).collect(Collectors.toList());
+            existingProduct.setImageProducts(newImages);
         }
+
         return existingProduct;
     }
 
@@ -285,29 +248,24 @@ public class ProductService implements IProductService {
 
     private void adjustPositions(Product product, int newPosition) {
         try {
-            // Retrieve all active products sorted by position (and created_at as a tie-breaker)
             List<Product> activeProducts = productRepository.findActiveProductsSorted(Pageable.unpaged()).getContent();
-            // Remove the current product if present
             activeProducts.removeIf(p -> p.getId().equals(product.getId()));
 
-            // Clamp newPosition between 1 and activeProducts.size() + 1 (1-indexed)
             if (newPosition < 1) {
                 newPosition = 1;
             } else if (newPosition > activeProducts.size() + 1) {
                 newPosition = activeProducts.size() + 1;
             }
-            // Insert product at new position (0-indexed insertion)
             activeProducts.add(newPosition - 1, product);
 
-            // Reassign positions for all products in the list
+            // Cập nhật lại thứ tự vị trí
             int pos = 1;
             for (Product p : activeProducts) {
-                if (p.getPosition() == null || !p.getPosition().equals(pos)) {
-                    p.setPosition(pos);
-                    productRepository.save(p);
-                }
-                pos++;
+                p.setPosition(pos++);
             }
+
+            // Batch update để giảm số lần gọi cơ sở dữ liệu
+            productRepository.saveAll(activeProducts);
         } catch (Exception ex) {
             log.error("Error adjusting product positions for product ID {}: {}", product.getId(), ex.getMessage(), ex);
         }
