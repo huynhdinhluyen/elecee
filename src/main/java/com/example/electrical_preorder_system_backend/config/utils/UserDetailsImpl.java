@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -23,8 +25,9 @@ public class UserDetailsImpl implements UserDetails {
 
     @Serial
     private static final long serialVersionUID = 1L;
+    private static final Logger log = LoggerFactory.getLogger(UserDetailsImpl.class);
     private UUID id;
-    private String name;
+    private String username;
     private String email;
     @JsonIgnore
     private String password;
@@ -32,12 +35,13 @@ public class UserDetailsImpl implements UserDetails {
 
     public static UserDetailsImpl build(User user) {
         GrantedAuthority authority = new SimpleGrantedAuthority(user.getRole().toString());
-        return new UserDetailsImpl(user.getId(), user.getName(), user.getEmail(), user.getPassword(), List.of(authority));
+        log.info("UserDetailsImpl.build authority: {} : {}", authority, user.getRole().toString());
+        return new UserDetailsImpl(user.getId(), user.getUsername(), user.getEmail(), user.getPassword(), List.of(authority));
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        return authorities;
     }
 
     @Override
@@ -47,7 +51,7 @@ public class UserDetailsImpl implements UserDetails {
 
     @Override
     public String getUsername() {
-        return email;
+        return username;
     }
 
     @Override

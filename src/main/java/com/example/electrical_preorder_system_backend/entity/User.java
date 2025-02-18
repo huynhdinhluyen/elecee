@@ -18,7 +18,7 @@ import java.util.UUID;
 @EntityListeners(AuditingEntityListener.class)
 @Entity
 @Table(name = "users", indexes = {
-        @Index(name = "idx_user_name", columnList = "name"),
+        @Index(name = "idx_user_name", columnList = "username"),
         @Index(name = "idx_email", columnList = "email"),
         @Index(name = "idx_phone_number", columnList = "phone_number")
 })
@@ -32,11 +32,15 @@ public class User {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
-    @Size(min = 3, max = 50)
-    private String name;
-
     @Column(nullable = false, unique = true)
+    @Size(min = 3, max = 50)
+    private String username;
+
+    @Column(nullable = false)
+    @Size(min = 3, max = 100)
+    private String fullname;
+
+    @Column(nullable = true, unique = true)
     @Email
     private String email;
 

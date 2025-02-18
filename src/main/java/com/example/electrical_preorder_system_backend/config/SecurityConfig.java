@@ -1,11 +1,10 @@
 package com.example.electrical_preorder_system_backend.config;
 
-import lombok.RequiredArgsConstructor;
+import com.example.electrical_preorder_system_backend.config.jwt.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -16,18 +15,28 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
 
 import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
-@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
-    private static final List<String> SECURED_URLS =
-            List.of("/user/p");
+
+    private final CustomAuthorizationManager authorizationManager;
+
+    public SecurityConfig(UserDetailsService userDetailsService, CustomAuthorizationManager authorizationManager) {
+        this.userDetailsService = userDetailsService;
+        this.authorizationManager = authorizationManager;
+    }
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter(){
+        return new JwtAuthenticationFilter();
+    }
 
     @Bean
     public DaoAuthenticationProvider daoAuthenticationProvider(){
@@ -52,13 +61,17 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth ->
-                        auth
-                                .requestMatchers(SECURED_URLS.toArray(String[]::new)).authenticated()
-                                .anyRequest().permitAll()
-                ).oauth2Login(Customizer.withDefaults())
+                .authorizeHttpRequests(auth -> auth.anyRequest().access(authorizationManager))
         ;
-
+        http.authenticationProvider(daoAuthenticationProvider());
+        http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+        http.cors(httpSecurityCorsConfigurer -> httpSecurityCorsConfigurer.configurationSource(request -> {
+            var cors = new CorsConfiguration();
+            cors.setAllowedOrigins(List.of("*"));
+            cors.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE","PATCH"));
+            cors.setAllowedHeaders(List.of("*"));
+            return cors;
+        }));
         return http.build();
     }
 

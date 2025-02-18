@@ -1,30 +1,17 @@
 package com.example.electrical_preorder_system_backend.service.user;
 
-//import com.example.electrical_preorder_system_backend.config.jwt.JwtUtils;
-//import com.example.electrical_preorder_system_backend.dto.response.AuthenticationResponse;
-//import com.example.electrical_preorder_system_backend.entity.User;
-//import com.example.electrical_preorder_system_backend.enums.UserRole;
-//import com.example.electrical_preorder_system_backend.enums.UserStatus;
-//import com.example.electrical_preorder_system_backend.repository.UserRepository;
-//import com.fasterxml.jackson.core.type.TypeReference;
-//import com.fasterxml.jackson.databind.ObjectMapper;
-//import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
-//import com.google.api.client.http.javanet.NetHttpTransport;
-//import com.google.api.client.json.gson.GsonFactory;
-//import com.nimbusds.jose.shaded.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-//import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
-//import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
@@ -59,7 +46,7 @@ public class AuthenticationService implements IAuthenticationService {
     }
 
     @Override
-    public Map<String,Object> authenticateAndFetchUser(String code, String loginType) throws Exception {
+    public Map<String, Object> authenticateAndFetchUser(String code, String loginType) throws Exception {
         RestTemplate restTemplate = new RestTemplate();
 
         // Exchange authorization code for access token
@@ -74,16 +61,17 @@ public class AuthenticationService implements IAuthenticationService {
 
         log.info("Token request: {}", tokenRequest);
 
-        ResponseEntity<Map<String, Object>> tokenResponse = restTemplate.exchange(
-                tokenUrl,
-                HttpMethod.POST,
-                new HttpEntity<>(tokenRequest),
-                new ParameterizedTypeReference<>() {}
-        );
-
-        if (tokenResponse.getStatusCode().isError()) {
-            log.info("Error response from token endpoint: {}", tokenResponse);
-            throw new RuntimeException("Failed to retrieve access token");
+        ResponseEntity<Map<String, Object>> tokenResponse;
+        try {
+            tokenResponse = restTemplate.exchange(
+                    tokenUrl,
+                    HttpMethod.POST,
+                    new HttpEntity<>(tokenRequest),
+                    new ParameterizedTypeReference<>() {}
+            );
+        } catch (HttpClientErrorException e) {
+            log.error("Error response from token endpoint: {}", e.getResponseBodyAsString());
+            throw new RuntimeException("Failed to retrieve access token: " + e.getMessage());
         }
 
         String accessToken = (String) Objects.requireNonNullElse(tokenResponse.getBody().get("access_token"), "");
@@ -94,12 +82,20 @@ public class AuthenticationService implements IAuthenticationService {
         headers.setBearerAuth(accessToken);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<Map<String, Object>> userInfoResponse = restTemplate.exchange(
-                userInfoUrl,
-                HttpMethod.GET,
-                entity,
-                new ParameterizedTypeReference<>() {}
-        );
+        ResponseEntity<Map<String, Object>> userInfoResponse;
+        try {
+            userInfoResponse = restTemplate.exchange(
+                    userInfoUrl,
+                    HttpMethod.GET,
+                    entity,
+                    new ParameterizedTypeReference<>() {}
+            );
+        } catch (HttpClientErrorException e) {
+            log.error("Error response from user info endpoint: {}", e.getResponseBodyAsString());
+            throw new RuntimeException("Failed to retrieve user information: " + e.getMessage());
+        }
+
+        log.info("User info response: {}", userInfoResponse.getBody());
 
         return userInfoResponse.getBody();
     }

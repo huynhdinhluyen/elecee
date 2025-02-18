@@ -10,7 +10,9 @@ import jakarta.validation.Valid;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -32,14 +34,21 @@ public class AuthenticationController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthenticationResponse> login(
+    public ResponseEntity<?> login(
             @Valid @RequestBody UserLoginRequest userLoginRequest
-    ) throws MessagingException {
-        return ResponseEntity.ok(new AuthenticationResponse(userService.login(userLoginRequest)));
+    )  {
+        try{
+            String token = userService.login(userLoginRequest);
+            return ResponseEntity.ok(new AuthenticationResponse(token));
+//        }catch (BadCredentialsException e){
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED.value()).body("Invalid username or password");
+        }catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).body("Internal server error");
+        }
     }
 
     @GetMapping("/social/callback")
-    public ResponseEntity<AuthenticationResponse> callback(
+    public ResponseEntity<?> callback(
             @RequestParam("code") String code,
             @RequestParam("login_type") String loginType
     ) throws Exception {
@@ -56,7 +65,7 @@ public class AuthenticationController {
         String email = "";
 
         if (loginType.equals("google")) {
-            googleAccountId = (String) Objects.requireNonNullElse(user.get("sub"), "");
+            googleAccountId = (String) Objects.requireNonNullElse(user.get("googleAccountId"), "");
             name = (String) Objects.requireNonNullElse(user.get("name"), "");
             email = (String) Objects.requireNonNullElse(user.get("email"), "");
         }
@@ -70,22 +79,7 @@ public class AuthenticationController {
         if (loginType.equals("google")) {
             userLoginRequest.setGoogleAccountId(googleAccountId);
         }
-
-        log.info("User login request: {}", userLoginRequest.toString());
         return this.login(userLoginRequest);
-
     }
 
-    @PostMapping("/verify")
-    public ResponseEntity<?> verify(
-        @NonNull @RequestBody EmailVerificationRequest request
-    ){
-        try{
-            log.info("Email verification request: {}", request.toString());
-            userService.verifyEmail(request.getToken());
-            return ResponseEntity.ok("Email verified successfully");
-        }catch (Exception e){
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
 }

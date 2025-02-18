@@ -1,5 +1,6 @@
 package com.example.electrical_preorder_system_backend.config.jwt;
 
+import com.example.electrical_preorder_system_backend.config.utils.UserDetailsImpl;
 import com.example.electrical_preorder_system_backend.entity.User;
 import com.example.electrical_preorder_system_backend.repository.UserRepository;
 import io.jsonwebtoken.*;
@@ -12,10 +13,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Component
 @Slf4j
@@ -36,8 +34,12 @@ public class JwtUtils {
 
     public boolean validateToken(String jwtToken) {
         try {
-            SecretKey key = getSecretKey();
-            Jwts.parser().decryptWith(key).build().parse(jwtToken);
+            Jwts
+                .parser()
+                .requireIssuer("elecee")
+                .verifyWith(getSecretKey())
+                .build()
+                .parseSignedClaims(jwtToken);
             return true;
         }catch (SecurityException | MalformedJwtException e){
             log.error("Invalid JWT token: {}", e.getMessage());
@@ -51,13 +53,16 @@ public class JwtUtils {
         return false;
     }
 
-    public String generateToken(User user) {
+    public String generateToken(User user, String provider) {
         Map<String,Object> claims = new HashMap<>();
         claims.put("userId", user.getId());
+        claims.put("email", user.getEmail());
+        claims.put("role", user.getRole());
+        claims.put("provider", provider);
         try {
             return Jwts.builder()
                     .subject(getSubject(user))
-                    .issuer("electrical_preorder_system")
+                    .issuer("elecee")
                     .claims(claims)
                     .signWith(getSecretKey(), Jwts.SIG.HS256)
                     .issuedAt(new Date(System.currentTimeMillis()))
@@ -68,6 +73,15 @@ public class JwtUtils {
             log.error("Error generating token: {}", e.getMessage());
         }
         return null;
+    }
+
+    public String generateToken(UserDetailsImpl userDetailsImpl, String provider){
+        Optional<User> userOptional = userRepository.findByUsername(userDetailsImpl.getUsername());
+        if (userOptional.isEmpty()){
+            log.error("User not fount: {}", userDetailsImpl.getUsername());
+            throw new RuntimeException("User not found");
+        }
+        return generateToken(userOptional.get(), provider);
     }
 
     public String generateVerificationToken(String email){
@@ -84,11 +98,13 @@ public class JwtUtils {
     //If login with Google, the subject will be the email
     //If login with username and password, the subject will be the username
     public static String getSubject(User user) {
-        String subject = user.getEmail();
+        String subject = user.getGoogleAccountId();
         if (subject == null || subject.isEmpty()) {
-            subject = user.getName();
+            subject = user.getUsername();
+        }else{
+            subject = user.getEmail();
         }
-        return user.getEmail();
+        return subject;
     }
 
     public Date getExpDateFromToken(String token){
@@ -117,6 +133,21 @@ public class JwtUtils {
                     .getPayload().getSubject();
         } catch (Exception e) {
             log.error("Error getting subject from token: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    public <T> T getFromToken(String token, String key, Class<T> aClass){
+        try {
+            return Jwts
+                    .parser()
+                    .requireIssuer("elecee")
+                    .verifyWith(getSecretKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload().get(key, aClass);
+        } catch (Exception e) {
+            log.error("Error getting {} from token: {}", key, e.getMessage());
         }
         return null;
     }
