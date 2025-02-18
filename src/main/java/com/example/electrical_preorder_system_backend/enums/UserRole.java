@@ -1,7 +1,7 @@
 package com.example.electrical_preorder_system_backend.enums;
 
 public enum UserRole {
-    ADMIN,
-    CUSTOMER,
-    STAFF
+    ROLE_ADMIN,
+    ROLE_CUSTOMER,
+    ROLE_STAFF
 }
