@@ -7,13 +7,18 @@ import com.example.electrical_preorder_system_backend.dto.response.ProductDTO;
 import com.example.electrical_preorder_system_backend.entity.Product;
 import com.example.electrical_preorder_system_backend.exception.ResourceNotFoundException;
 import com.example.electrical_preorder_system_backend.service.product.IProductService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
@@ -62,27 +67,36 @@ public class ProductController {
         }
     }
 
-    @PostMapping
-    public ResponseEntity<ApiResponse> createProduct(@RequestBody CreateProductRequest request) {
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse> createProduct(
+            @RequestPart("product") @Valid CreateProductRequest productRequest,
+            @RequestPart(value = "files", required = false) List<MultipartFile> imageFiles) {
         try {
-            Product newProduct = productService.addProduct(request);
-            return ResponseEntity.ok(new ApiResponse("Add product successfully", productService.convertToDto(newProduct)));
+            Product product = productService.addProduct(productRequest, imageFiles);
+            return ResponseEntity.ok(new ApiResponse("Product created successfully", productService.convertToDto(product)));
         } catch (Exception e) {
-            return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(new ApiResponse(e.getMessage(), null));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse(e.getMessage(), null));
         }
     }
 
-    @PatchMapping("/{id}")
-    public ResponseEntity<ApiResponse> updateProduct(@PathVariable UUID id, @RequestBody UpdateProductRequest request) {
+    @PatchMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse> updateProduct(
+            @PathVariable UUID id,
+            @RequestPart("product") UpdateProductRequest request,
+            @RequestPart(value = "files", required = false) List<MultipartFile> imageFiles) {
         try {
-            Product updatedProduct = productService.updateProduct(request, id);
+            Product updatedProduct = productService.updateProduct(request, id, imageFiles);
             return ResponseEntity.ok(new ApiResponse("Update product successfully", productService.convertToDto(updatedProduct)));
         } catch (ResourceNotFoundException e) {
-            return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse(e.getMessage(), null));
         } catch (IllegalStateException e) {
-            return ResponseEntity.status(409).body(new ApiResponse(e.getMessage(), null));
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ApiResponse(e.getMessage(), null));
         } catch (Exception e) {
-            return ResponseEntity.status(INTERNAL_SERVER_ERROR).body(new ApiResponse(e.getMessage(), null));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse(e.getMessage(), null));
         }
     }
 

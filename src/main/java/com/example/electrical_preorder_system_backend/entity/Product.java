@@ -9,7 +9,6 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.modelmapper.internal.bytebuddy.implementation.bind.annotation.Default;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
@@ -21,7 +20,7 @@ import java.util.UUID;
 @EntityListeners(AuditingEntityListener.class)
 @Entity
 @DynamicUpdate
-@Table(name = "products", indexes = {
+@Table(name = "\"product\"", indexes = {
         @Index(name = "idx_product_code", columnList = "product_code"),
         @Index(name = "idx_product_name", columnList = "name"),
         @Index(name = "idx_product_category_id", columnList = "category_id"),
