@@ -5,8 +5,10 @@ import com.example.electrical_preorder_system_backend.entity.Category;
 import com.example.electrical_preorder_system_backend.exception.AlreadyExistsException;
 import com.example.electrical_preorder_system_backend.exception.ResourceNotFoundException;
 import com.example.electrical_preorder_system_backend.service.category.ICategoryService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
