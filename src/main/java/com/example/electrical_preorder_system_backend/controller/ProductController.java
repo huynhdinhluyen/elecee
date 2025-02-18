@@ -70,7 +70,7 @@ public class ProductController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse> createProduct(
             @RequestPart("product") @Valid CreateProductRequest productRequest,
-            @RequestPart(value = "files", required = false) List<MultipartFile> imageFiles) {
+            @RequestPart(value = "imageFiles", required = false) List<MultipartFile> imageFiles) {
         try {
             Product product = productService.addProduct(productRequest, imageFiles);
             return ResponseEntity.ok(new ApiResponse("Product created successfully", productService.convertToDto(product)));
