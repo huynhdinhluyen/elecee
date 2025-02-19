@@ -55,9 +55,8 @@ public class JwtUtils {
 
     public String generateToken(User user, String provider) {
         Map<String,Object> claims = new HashMap<>();
-        claims.put("userId", user.getId());
-        claims.put("email", user.getEmail());
         claims.put("role", user.getRole());
+        claims.put("fullName", user.getFullname());
         claims.put("provider", provider);
         try {
             return Jwts.builder()
@@ -98,13 +97,7 @@ public class JwtUtils {
     //If login with Google, the subject will be the email
     //If login with username and password, the subject will be the username
     public static String getSubject(User user) {
-        String subject = user.getGoogleAccountId();
-        if (subject == null || subject.isEmpty()) {
-            subject = user.getUsername();
-        }else{
-            subject = user.getEmail();
-        }
-        return subject;
+        return user.getUsername();
     }
 
     public Date getExpDateFromToken(String token){
@@ -133,21 +126,6 @@ public class JwtUtils {
                     .getPayload().getSubject();
         } catch (Exception e) {
             log.error("Error getting subject from token: {}", e.getMessage());
-        }
-        return null;
-    }
-
-    public <T> T getFromToken(String token, String key, Class<T> aClass){
-        try {
-            return Jwts
-                    .parser()
-                    .requireIssuer("elecee")
-                    .verifyWith(getSecretKey())
-                    .build()
-                    .parseSignedClaims(token)
-                    .getPayload().get(key, aClass);
-        } catch (Exception e) {
-            log.error("Error getting {} from token: {}", key, e.getMessage());
         }
         return null;
     }
