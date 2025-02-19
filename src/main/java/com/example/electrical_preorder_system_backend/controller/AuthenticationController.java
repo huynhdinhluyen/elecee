@@ -43,7 +43,7 @@ public class AuthenticationController {
 //        }catch (BadCredentialsException e){
 //            return ResponseEntity.status(HttpStatus.UNAUTHORIZED.value()).body("Invalid username or password");
         }catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).body("Internal server error");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).body(e.getMessage());
         }
     }
 
@@ -61,23 +61,25 @@ public class AuthenticationController {
         }
 
         String googleAccountId = "";
-        String name = "";
-        String email = "";
+        String fullName = "";
+        String username = "";
 
         if (loginType.equals("google")) {
-            googleAccountId = (String) Objects.requireNonNullElse(user.get("googleAccountId"), "");
-            name = (String) Objects.requireNonNullElse(user.get("name"), "");
-            email = (String) Objects.requireNonNullElse(user.get("email"), "");
+            googleAccountId = (String) Objects.requireNonNullElse(user.get("sub"), "");
+            fullName = (String) Objects.requireNonNullElse(user.get("name"), "");
+            username = (String) Objects.requireNonNullElse(user.get("email"), "");
         }
 
         UserLoginRequest userLoginRequest = UserLoginRequest.builder()
-                .username(name)
+                .username(username)
                 .password("")
-                .email(email)
+                .fullName(fullName)
                 .build();
 
-        if (loginType.equals("google")) {
+        if (!googleAccountId.isEmpty()) {
             userLoginRequest.setGoogleAccountId(googleAccountId);
+        }else {
+            log.error("Google account id is empty");
         }
         return this.login(userLoginRequest);
     }
