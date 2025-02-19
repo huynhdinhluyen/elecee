@@ -84,7 +84,7 @@ public class UserService implements IUserService {
     public String login(UserLoginRequest userLoginRequest) throws MessagingException {
         Optional<User> userOptional;
         //login with Google
-        if (userLoginRequest.getGoogleAccountId()!=null || !userLoginRequest.getGoogleAccountId().isEmpty()){
+        if (!userLoginRequest.getGoogleAccountId().isEmpty()){
             userOptional = userRepository.findByGoogleAccountId(userLoginRequest.getGoogleAccountId());
             String jwtToken = "";
             log.info("Login with google request: {}", userLoginRequest);
@@ -92,9 +92,9 @@ public class UserService implements IUserService {
                 //register user
                 User newUser = User.builder()
                         .googleAccountId(userLoginRequest.getGoogleAccountId())
-                        .username(userLoginRequest.getEmail())
-                        .fullname(userLoginRequest.getUsername())
-                        .email(userLoginRequest.getEmail())
+                        .username(userLoginRequest.getUsername())
+                        .fullname(userLoginRequest.getFullName())
+                        .email(userLoginRequest.getUsername())
                         .role(UserRole.ROLE_CUSTOMER)
                         .isVerified(false)
                         .status(UserStatus.INACTIVE)
@@ -104,10 +104,10 @@ public class UserService implements IUserService {
 
                 //Send email verification
                 emailService.sendEmail(
-                        userLoginRequest.getEmail(),
+                        userLoginRequest.getUsername(),
                         emailService.subjectRegister(),
                         emailService.bodyRegister(
-                                userLoginRequest.getEmail(),
+                                userLoginRequest.getUsername(),
                                 userLoginRequest.getUsername()
                         )
                 );
@@ -115,6 +115,9 @@ public class UserService implements IUserService {
                 newUser.setToken(jwtToken);
                 newUser.setTokenExpires(LocalDateTime.ofInstant(jwtUtils.getExpDateFromToken(jwtToken).toInstant(), ZoneId.systemDefault()));
                 userRepository.save(newUser);
+            }else {
+                User user = userOptional.get();
+                jwtToken = jwtUtils.generateToken(user,"google");
             }
             log.info("Login with google - token: {}", jwtToken);
             return jwtToken;
