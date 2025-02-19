@@ -7,6 +7,7 @@ import com.example.electrical_preorder_system_backend.dto.response.ProductDTO;
 import com.example.electrical_preorder_system_backend.entity.Product;
 import com.example.electrical_preorder_system_backend.exception.ResourceNotFoundException;
 import com.example.electrical_preorder_system_backend.service.product.IProductService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -68,6 +69,7 @@ public class ProductController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<ApiResponse> createProduct(
             @RequestPart("product") @Valid CreateProductRequest productRequest,
             @RequestPart(value = "files", required = false) List<MultipartFile> imageFiles) {
@@ -81,6 +83,7 @@ public class ProductController {
     }
 
     @PatchMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<ApiResponse> updateProduct(
             @PathVariable UUID id,
             @RequestPart("product") UpdateProductRequest request,
@@ -101,6 +104,7 @@ public class ProductController {
     }
 
     @DeleteMapping("/{id}")
+    @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<ApiResponse> deleteProduct(@PathVariable UUID id) {
         try {
             productService.deleteProductById(id);
