@@ -13,6 +13,6 @@ public class UserLoginRequest {
     String username;
     String password;
     String googleAccountId;
-    String email;
+    String fullName;
 
 }

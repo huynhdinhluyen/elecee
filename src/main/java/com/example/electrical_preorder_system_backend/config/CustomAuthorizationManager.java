@@ -32,9 +32,9 @@ public class CustomAuthorizationManager implements AuthorizationManager<RequestA
         String requestMethod = context.getRequest().getMethod();
 
         List<ApiPermission> permissions = permissionService.getAllPermissionsWithRoles();
-        for (ApiPermission permission : permissions) {
-            log.info("Permission: {} - {} - {}", permission.getHttpMethod(), permission.getPathPattern(), permission.getRoles());
-        }
+//        for (ApiPermission permission : permissions) {
+//            log.info("Permission: {} - {} - {}", permission.getHttpMethod(), permission.getPathPattern(), permission.getRoles());
+//        }
         for (ApiPermission permission : permissions) {
             if (requestPath.matches(permission.getPathPattern()) &&
                     requestMethod.equalsIgnoreCase(permission.getHttpMethod())) {

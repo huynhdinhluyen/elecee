@@ -4,6 +4,7 @@ import com.example.electrical_preorder_system_backend.dto.request.EmailVerificat
 import com.example.electrical_preorder_system_backend.dto.request.UserSignUpRequest;
 import com.example.electrical_preorder_system_backend.entity.User;
 import com.example.electrical_preorder_system_backend.service.user.UserService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/sign-up")
+    @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<?> signUp(
             @NonNull @RequestBody UserSignUpRequest userSignUpRequest
     ){
