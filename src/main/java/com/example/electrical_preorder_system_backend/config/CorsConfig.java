@@ -1,4 +1,4 @@
-package com.example.electrical_preorder_system_backend.security;
+package com.example.electrical_preorder_system_backend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
