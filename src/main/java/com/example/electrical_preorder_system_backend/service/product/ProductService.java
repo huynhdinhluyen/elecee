@@ -19,7 +19,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -43,7 +45,6 @@ public class ProductService implements IProductService {
             throw new AlreadyExistsException("Product code '" + request.getProductCode() + "' already exists.");
         }
 
-        // Lấy hoặc tạo mới Category
         String categoryName = request.getCategory().getName().trim();
         Category category = categoryRepository.findByName(categoryName);
         if (category == null) {
@@ -51,7 +52,6 @@ public class ProductService implements IProductService {
             category = categoryRepository.save(category);
         }
 
-        // Tạo đối tượng Product mới
         Product product = new Product(
                 request.getProductCode(),
                 request.getName().trim(),
@@ -64,11 +64,9 @@ public class ProductService implements IProductService {
         product.setStatus(ProductStatus.AVAILABLE);
         product.setSlug(generateUniqueSlug(product.getName()));
 
-        // Xử lý file upload: Upload từng file qua Cloudinary trong tầng service
         if (files != null && !files.isEmpty()) {
             Product finalProduct = product;
             List<ImageProduct> imageProducts = files.stream().map(file -> {
-                // Thực hiện upload file qua CloudinaryService
                 String imageUrl = cloudinaryService.uploadFile(file);
                 ImageProduct img = new ImageProduct();
                 img.setAltText(file.getOriginalFilename());
@@ -81,7 +79,6 @@ public class ProductService implements IProductService {
 
         product = productRepository.save(product);
 
-        // Điều chỉnh vị trí nếu cần
         if (request.getPosition() != null) {
             adjustPositions(product, request.getPosition());
         }
@@ -97,6 +94,11 @@ public class ProductService implements IProductService {
     @Override
     public Page<Product> getProductsByCategory(String categoryName, Pageable pageable) {
         return productRepository.findByCategory_NameAndIsDeletedFalse(categoryName, pageable);
+    }
+
+    @Override
+    public Page<Product> getProductsByName(String name, Pageable pageable) {
+        return productRepository.findByNameContainingIgnoreCaseAndIsDeletedFalse(name, pageable);
     }
 
     @Override
@@ -186,7 +188,7 @@ public class ProductService implements IProductService {
 
     @Override
     public Long countProducts() {
-        return productRepository.count();
+        return productRepository.countActiveProducts();
     }
 
     @Override
@@ -258,16 +260,39 @@ public class ProductService implements IProductService {
             }
             activeProducts.add(newPosition - 1, product);
 
-            // Cập nhật lại thứ tự vị trí
             int pos = 1;
             for (Product p : activeProducts) {
                 p.setPosition(pos++);
             }
 
-            // Batch update để giảm số lần gọi cơ sở dữ liệu
             productRepository.saveAll(activeProducts);
         } catch (Exception ex) {
             log.error("Error adjusting product positions for product ID {}: {}", product.getId(), ex.getMessage(), ex);
         }
+    }
+
+    @Override
+    public Page<Product> searchProducts(String query, Pageable pageable) {
+        if (query == null || query.isBlank()) {
+            return getProducts(pageable);
+        }
+        return productRepository.searchProducts(query, pageable);
+    }
+
+    @Override
+    public Page<Product> searchProducts(String query, String category, Pageable pageable) {
+        if (query == null || query.isBlank()) {
+            return productRepository.findByCategory_NameAndIsDeletedFalse(category, pageable);
+        }
+        return productRepository.searchProductsByCategory(query, category, pageable);
+    }
+
+    @Override
+    public Product getProductByProductCode(String productCode) {
+        Product product = productRepository.findByProductCode(productCode.trim());
+        if (product == null || product.isDeleted()) {
+            throw new ResourceNotFoundException("Product not found with code: " + productCode);
+        }
+        return product;
     }
 }
