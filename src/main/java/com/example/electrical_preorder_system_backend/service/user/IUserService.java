@@ -9,7 +9,7 @@ public interface IUserService {
 
     User signUp(UserSignUpRequest userSignInRequest) throws MessagingException;
 
-    String login(UserLoginRequest userLoginRequest) throws MessagingException;
+    String googeLogin(UserLoginRequest userLoginRequest) throws MessagingException;
 
     Boolean isValidGoogleId(UserLoginRequest userLoginRequest);
 
