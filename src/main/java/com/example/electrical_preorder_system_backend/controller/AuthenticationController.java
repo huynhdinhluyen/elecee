@@ -27,8 +27,8 @@ public class AuthenticationController {
     private final AuthenticationService authenticationService;
     private final UserService userService;
 
-    @GetMapping("/social-login")
-    public ResponseEntity<String> googleLogin(@RequestParam("login_type") String loginType) {
+    @PostMapping("/social-login")
+    public ResponseEntity<String> googleLogin(@RequestBody String loginType) {
         loginType = loginType.trim().toLowerCase();
         return ResponseEntity.ok(authenticationService.generateAuthUrl(loginType));
     }
@@ -38,10 +38,8 @@ public class AuthenticationController {
             @Valid @RequestBody UserLoginRequest userLoginRequest
     )  {
         try{
-            String token = userService.login(userLoginRequest);
+            String token = userService.googeLogin(userLoginRequest);
             return ResponseEntity.ok(new AuthenticationResponse(token));
-//        }catch (BadCredentialsException e){
-//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED.value()).body("Invalid username or password");
         }catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).body(e.getMessage());
         }
