@@ -81,13 +81,12 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public String login(UserLoginRequest userLoginRequest) throws MessagingException {
+    public String googeLogin(UserLoginRequest userLoginRequest) throws MessagingException {
         Optional<User> userOptional;
         //login with Google
         if (!userLoginRequest.getGoogleAccountId().isEmpty()){
             userOptional = userRepository.findByGoogleAccountId(userLoginRequest.getGoogleAccountId());
             String jwtToken = "";
-            log.info("Login with google request: {}", userLoginRequest);
             if (userOptional.isEmpty()){
                 //register user
                 User newUser = User.builder()
