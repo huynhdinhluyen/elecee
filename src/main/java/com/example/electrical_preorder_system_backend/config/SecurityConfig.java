@@ -2,7 +2,6 @@ package com.example.electrical_preorder_system_backend.config;
 
 import com.example.electrical_preorder_system_backend.config.jwt.AuthEntryPointJwt;
 import com.example.electrical_preorder_system_backend.config.jwt.JwtAuthenticationFilter;
-import com.example.electrical_preorder_system_backend.entity.ApiPermission;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,7 +23,6 @@ import org.springframework.web.cors.CorsConfiguration;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Configuration
 @EnableWebSecurity
