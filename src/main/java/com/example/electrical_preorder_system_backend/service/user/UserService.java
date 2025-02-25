@@ -45,12 +45,12 @@ public class UserService implements IUserService {
 
     @Override
     public User signUp(UserSignUpRequest userSignInRequest) throws MessagingException {
-        try{
+        try {
             if (userRepository.existsByUsername(userSignInRequest.getUsername())) {
                 throw new RuntimeException("SignUp failed: Username already exists");
-            }else if (userRepository.existsByEmail(userSignInRequest.getEmail())) {
+            } else if (userRepository.existsByEmail(userSignInRequest.getEmail())) {
                 throw new RuntimeException("SignUp failed: Email already exists");
-            }else if (userRepository.existsByPhoneNumber(userSignInRequest.getPhoneNumber())){
+            } else if (userRepository.existsByPhoneNumber(userSignInRequest.getPhoneNumber())) {
                 throw new RuntimeException("SignUp failed: Phone number already exists");
             }
             String role = userSignInRequest.getRole();
@@ -58,7 +58,7 @@ public class UserService implements IUserService {
                 throw new RuntimeException("SignUp failed: Invalid role");
             }
 
-            User user =  User.builder()
+            User user = User.builder()
                     .username(userSignInRequest.getUsername())
                     .password(passwordEncoder.encode(userSignInRequest.getPassword()))
                     .fullname(userSignInRequest.getFullname())
@@ -66,29 +66,28 @@ public class UserService implements IUserService {
                     .phoneNumber(userSignInRequest.getPhoneNumber())
                     .role(UserRole.valueOf(role))
                     .isVerified(true)
-                    .status(userSignInRequest.isActive()? UserStatus.ACTIVE: UserStatus.INACTIVE)
+                    .status(userSignInRequest.isActive() ? UserStatus.ACTIVE : UserStatus.INACTIVE)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();
-            String jwtToken = jwtUtils.generateToken(user,"normal");
+            String jwtToken = jwtUtils.generateToken(user, "normal");
             user.setToken(jwtToken);
             user.setTokenExpires(LocalDateTime.ofInstant(jwtUtils.getExpDateFromToken(jwtToken).toInstant(), ZoneId.systemDefault()));
             return userRepository.save(user);
-        }catch(TransactionSystemException ex) {
+        } catch (TransactionSystemException ex) {
             log.error("Transaction failed: ", ex);
             throw new RuntimeException("Sign-up failed due to transaction error", ex);
         }
     }
 
     @Override
-    public String login(UserLoginRequest userLoginRequest) throws MessagingException {
+    public String googeLogin(UserLoginRequest userLoginRequest) throws MessagingException {
         Optional<User> userOptional;
         //login with Google
-        if (!userLoginRequest.getGoogleAccountId().isEmpty()){
+        if (!userLoginRequest.getGoogleAccountId().isEmpty()) {
             userOptional = userRepository.findByGoogleAccountId(userLoginRequest.getGoogleAccountId());
             String jwtToken = "";
-            log.info("Login with google request: {}", userLoginRequest);
-            if (userOptional.isEmpty()){
+            if (userOptional.isEmpty()) {
                 //register user
                 User newUser = User.builder()
                         .googleAccountId(userLoginRequest.getGoogleAccountId())
@@ -111,17 +110,17 @@ public class UserService implements IUserService {
                                 userLoginRequest.getUsername()
                         )
                 );
-                jwtToken = jwtUtils.generateToken(newUser,"google");
+                jwtToken = jwtUtils.generateToken(newUser, "google");
                 newUser.setToken(jwtToken);
                 newUser.setTokenExpires(LocalDateTime.ofInstant(jwtUtils.getExpDateFromToken(jwtToken).toInstant(), ZoneId.systemDefault()));
                 userRepository.save(newUser);
-            }else {
+            } else {
                 User user = userOptional.get();
-                jwtToken = jwtUtils.generateToken(user,"google");
+                jwtToken = jwtUtils.generateToken(user, "google");
             }
             log.info("Login with google - token: {}", jwtToken);
             return jwtToken;
-        }else {
+        } else {
             // Login with username and password
             log.info("Login with username and password request: {}", userLoginRequest);
             try {
@@ -146,7 +145,7 @@ public class UserService implements IUserService {
         return false;
     }
 
-    public String subjectRegister(){
+    public String subjectRegister() {
         return "Verify your email";
     }
 
@@ -160,24 +159,24 @@ public class UserService implements IUserService {
         Date expDate = jwtUtils.getExpDateFromToken(token);
 
         // Check if the token is not expired
-        if (!expDate.before(new Date())){
+        if (!expDate.before(new Date())) {
             String email = jwtUtils.getSubjectFromToken(token);
-            if (email!=null){
+            if (email != null) {
                 //Activate user account and set verified to true
                 Optional<User> userOptional = userRepository.findByEmail(email);
-                if (userOptional.isPresent()){
+                if (userOptional.isPresent()) {
                     User user = userOptional.get();
                     user.setStatus(UserStatus.ACTIVE);
                     user.setVerified(true);
                     userRepository.save(user);
                     log.info("User with email {} verified", email);
-                }else {
+                } else {
                     throw new RuntimeException("User not found");
                 }
-            }else {
+            } else {
                 throw new RuntimeException("Invalid token");
             }
-        }else {
+        } else {
             throw new RuntimeException("Token expired");
         }
     }
