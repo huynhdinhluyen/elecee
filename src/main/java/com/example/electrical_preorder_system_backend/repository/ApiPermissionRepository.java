@@ -11,7 +11,9 @@ import java.util.UUID;
 @Repository
 public interface ApiPermissionRepository extends JpaRepository<ApiPermission, UUID> {
     List<ApiPermission> findAll();
+
     boolean existsByPathPattern(String pathPattern);
+
     @Query("SELECT p FROM ApiPermission p JOIN FETCH p.roles")
     List<ApiPermission> findAllWithRoles();
 }

@@ -26,15 +26,15 @@ public class UserController {
     @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<?> signUp(
             @NonNull @RequestBody UserSignUpRequest userSignUpRequest
-    ){
-        try{
+    ) {
+        try {
             User user = userService.signUp(userSignUpRequest);
-            if (user == null){
+            if (user == null) {
                 return ResponseEntity.badRequest().body("User signed up failed");
-            }else {
+            } else {
                 return ResponseEntity.ok("User signed up successfully");
             }
-        }catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
@@ -42,12 +42,12 @@ public class UserController {
     @PostMapping("/verify")
     public ResponseEntity<?> verify(
             @NonNull @RequestBody EmailVerificationRequest request
-    ){
-        try{
+    ) {
+        try {
             log.info("Email verification request: {}", request.toString());
             userService.verifyEmail(request.getToken());
             return ResponseEntity.ok("Email verified successfully");
-        }catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
