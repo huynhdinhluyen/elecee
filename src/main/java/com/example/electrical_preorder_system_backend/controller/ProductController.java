@@ -86,6 +86,12 @@ public class ProductController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse> deleteProduct(@PathVariable UUID id) {
         productService.deleteProductById(id);
-        return ResponseEntity.ok(new ApiResponse("Product deleted successfully", null));
+        return ResponseEntity.ok(new ApiResponse("Product deleted successfully", id));
+    }
+
+    @DeleteMapping
+    public ResponseEntity<ApiResponse> deleteProducts(@RequestParam List<UUID> ids) {
+        productService.deleteProducts(ids);
+        return ResponseEntity.ok(new ApiResponse("Products deleted successfully", ids));
     }
 }

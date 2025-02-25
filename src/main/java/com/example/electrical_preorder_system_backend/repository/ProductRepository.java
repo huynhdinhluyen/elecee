@@ -27,8 +27,6 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
             nativeQuery = true)
     Page<Product> findActiveProductsSorted(Pageable pageable);
 
-    Page<Product> findByIsDeletedFalse(Pageable pageable);
-
     @Query(value = "SELECT * FROM product " +
             "WHERE is_deleted = false AND category_id IN (SELECT id FROM category WHERE name = ?1) " +
             "ORDER BY CASE WHEN position = 0 THEN 1 ELSE 0 END, position ASC, created_at ASC",

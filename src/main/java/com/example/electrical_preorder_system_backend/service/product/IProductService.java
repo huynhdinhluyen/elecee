@@ -4,7 +4,6 @@ import com.example.electrical_preorder_system_backend.dto.request.CreateProductR
 import com.example.electrical_preorder_system_backend.dto.request.UpdateProductRequest;
 import com.example.electrical_preorder_system_backend.dto.response.ProductDTO;
 import com.example.electrical_preorder_system_backend.entity.Product;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,9 +23,13 @@ public interface IProductService {
     Product getProductById(UUID id);
 
     Product updateProduct(UpdateProductRequest request, UUID id, List<MultipartFile> files);
+
     void deleteProductById(UUID id);
+
     Long countProducts();
+
     Page<ProductDTO> getConvertedProducts(Pageable pageable);
+
     ProductDTO convertToDto(Product product);
 
     Page<Product> searchProducts(String query, Pageable pageable);
@@ -34,4 +37,6 @@ public interface IProductService {
     Page<Product> searchProducts(String query, String category, Pageable pageable);
 
     Product getProductByProductCode(String productCode);
+
+    void deleteProducts(List<UUID> ids);
 }
