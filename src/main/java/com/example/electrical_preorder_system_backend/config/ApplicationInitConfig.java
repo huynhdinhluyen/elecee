@@ -59,17 +59,21 @@ public class ApplicationInitConfig {
             List<ApiPermission> permissions = List.of(
                     new ApiPermission("POST", apiPrefix + "/user", Set.of(roleAdmin)),
                     new ApiPermission("POST", apiPrefix + "/user/sign-up", Set.of(roleAdmin)),
-                    new ApiPermission("PATCH", apiPrefix + "/products", Set.of(roleAdmin)),
-                    new ApiPermission("DELETE", apiPrefix + "/products", Set.of(roleAdmin)),
+                    new ApiPermission("GET", apiPrefix + "/products", Set.of(rolePermitAll)),
+                    new ApiPermission("GET", apiPrefix + "/products/:id", Set.of(rolePermitAll)),
+                    new ApiPermission("GET", apiPrefix + "/products/search", Set.of(rolePermitAll)),
+                    new ApiPermission("GET", apiPrefix + "/products/count", Set.of(rolePermitAll)),
                     new ApiPermission("POST", apiPrefix + "/products", Set.of(roleAdmin)),
+                    new ApiPermission("PATCH", apiPrefix + "/products/:id", Set.of(roleAdmin)),
+                    new ApiPermission("DELETE", apiPrefix + "/products/:id", Set.of(roleAdmin)),
+                    new ApiPermission("DELETE", apiPrefix + "/products/:id", Set.of(roleAdmin)),
                     new ApiPermission("GET", apiPrefix + "/auth/social-login", Set.of(rolePermitAll)),
                     new ApiPermission("GET", apiPrefix + "/auth/social/callback", Set.of(rolePermitAll)),
                     new ApiPermission("POST", apiPrefix + "/auth/login", Set.of(rolePermitAll)),
-                    new ApiPermission("GET", apiPrefix + "/products", Set.of(rolePermitAll)),
                     new ApiPermission("GET", apiPrefix + "/categories", Set.of(rolePermitAll)),
                     new ApiPermission("POST", apiPrefix + "/categories", Set.of(roleAdmin)),
-                    new ApiPermission("PUT", apiPrefix + "/categories", Set.of(roleAdmin)),
-                    new ApiPermission("DELETE", apiPrefix + "/categories", Set.of(roleAdmin))
+                    new ApiPermission("PUT", apiPrefix + "/categories/:id", Set.of(roleAdmin)),
+                    new ApiPermission("DELETE", apiPrefix + "/categories/:id", Set.of(roleAdmin))
             );
 
             // Add permissions if not present in the database

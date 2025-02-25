@@ -1,18 +1,14 @@
 package com.example.electrical_preorder_system_backend.controller;
 
-import com.example.electrical_preorder_system_backend.dto.request.EmailVerificationRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UserLoginRequest;
 import com.example.electrical_preorder_system_backend.dto.response.AuthenticationResponse;
 import com.example.electrical_preorder_system_backend.service.user.AuthenticationService;
 import com.example.electrical_preorder_system_backend.service.user.UserService;
-import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -36,11 +32,11 @@ public class AuthenticationController {
     @PostMapping("/login")
     public ResponseEntity<?> login(
             @Valid @RequestBody UserLoginRequest userLoginRequest
-    )  {
-        try{
+    ) {
+        try {
             String token = userService.googeLogin(userLoginRequest);
             return ResponseEntity.ok(new AuthenticationResponse(token));
-        }catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR.value()).body(e.getMessage());
         }
     }
@@ -76,7 +72,7 @@ public class AuthenticationController {
 
         if (!googleAccountId.isEmpty()) {
             userLoginRequest.setGoogleAccountId(googleAccountId);
-        }else {
+        } else {
             log.error("Google account id is empty");
         }
         return this.login(userLoginRequest);

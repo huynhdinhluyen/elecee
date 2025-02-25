@@ -2,7 +2,6 @@ package com.example.electrical_preorder_system_backend.config;
 
 import com.example.electrical_preorder_system_backend.config.jwt.AuthEntryPointJwt;
 import com.example.electrical_preorder_system_backend.config.jwt.JwtAuthenticationFilter;
-import com.example.electrical_preorder_system_backend.entity.ApiPermission;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,16 +23,12 @@ import org.springframework.web.cors.CorsConfiguration;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
-
-    private final UserDetailsService userDetailsService;
-    private final AuthEntryPointJwt unauthorizedHandler;
 
     private static final List<Map.Entry<String, HttpMethod>> SECURED_URLS = List.of(
             Map.entry("/user", HttpMethod.POST),
@@ -46,16 +41,16 @@ public class SecurityConfig {
             Map.entry("/categories", HttpMethod.PUT),
             Map.entry("/categories", HttpMethod.DELETE)
     );
-
-
+    private final UserDetailsService userDetailsService;
+    private final AuthEntryPointJwt unauthorizedHandler;
 
     @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter(){
+    public JwtAuthenticationFilter jwtAuthenticationFilter() {
         return new JwtAuthenticationFilter();
     }
 
     @Bean
-    public DaoAuthenticationProvider daoAuthenticationProvider(){
+    public DaoAuthenticationProvider daoAuthenticationProvider() {
         DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
         authenticationProvider.setUserDetailsService(userDetailsService);
         authenticationProvider.setPasswordEncoder(passwordEncoder());
@@ -63,7 +58,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder(){
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
@@ -88,7 +83,7 @@ public class SecurityConfig {
         http.cors(httpSecurityCorsConfigurer -> httpSecurityCorsConfigurer.configurationSource(request -> {
             var cors = new CorsConfiguration();
             cors.setAllowedOrigins(List.of("*"));
-            cors.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE","PATCH"));
+            cors.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
             cors.setAllowedHeaders(List.of("*"));
             return cors;
         }));

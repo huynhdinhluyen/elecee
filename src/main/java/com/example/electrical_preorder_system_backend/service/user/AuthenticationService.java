@@ -1,7 +1,6 @@
 package com.example.electrical_preorder_system_backend.service.user;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,13 +32,13 @@ public class AuthenticationService implements IAuthenticationService {
 
     @Override
     public String generateAuthUrl(String loginType) {
-        String url="";
+        String url = "";
 
         if (loginType.equals("google")) {
             url = "https://accounts.google.com/o/oauth2/auth?"
-                + "client_id=" + clientId
-                + "&redirect_uri=" + redirectUri
-                + "&response_type=code&scope=email%20profile";
+                    + "client_id=" + clientId
+                    + "&redirect_uri=" + redirectUri
+                    + "&response_type=code&scope=email%20profile";
         }
 
         return url;
@@ -67,7 +66,8 @@ public class AuthenticationService implements IAuthenticationService {
                     tokenUrl,
                     HttpMethod.POST,
                     new HttpEntity<>(tokenRequest),
-                    new ParameterizedTypeReference<>() {}
+                    new ParameterizedTypeReference<>() {
+                    }
             );
         } catch (HttpClientErrorException e) {
             log.error("Error response from token endpoint: {}", e.getResponseBodyAsString());
@@ -88,7 +88,8 @@ public class AuthenticationService implements IAuthenticationService {
                     userInfoUrl,
                     HttpMethod.GET,
                     entity,
-                    new ParameterizedTypeReference<>() {}
+                    new ParameterizedTypeReference<>() {
+                    }
             );
         } catch (HttpClientErrorException e) {
             log.error("Error response from user info endpoint: {}", e.getResponseBodyAsString());
