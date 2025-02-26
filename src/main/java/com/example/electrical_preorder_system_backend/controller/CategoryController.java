@@ -4,15 +4,21 @@ import com.example.electrical_preorder_system_backend.dto.request.CreateCategory
 import com.example.electrical_preorder_system_backend.dto.request.UpdateCategoryRequest;
 import com.example.electrical_preorder_system_backend.dto.response.ApiResponse;
 import com.example.electrical_preorder_system_backend.dto.response.CategoryDTO;
+import com.example.electrical_preorder_system_backend.exception.AlreadyExistsException;
+import com.example.electrical_preorder_system_backend.exception.ResourceNotFoundException;
 import com.example.electrical_preorder_system_backend.service.category.ICategoryService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+
+import static org.springframework.http.HttpStatus.CONFLICT;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @RestController
 @RequiredArgsConstructor
@@ -36,9 +42,9 @@ public class CategoryController {
     @PostMapping
     @SecurityRequirement(name = "Bearer Authentication")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<ApiResponse> addCategory(@RequestBody Category name) {
+    public ResponseEntity<ApiResponse> addCategory(@RequestBody CreateCategoryRequest categoryRequest) {
         try {
-            Category newCategory = categoryService.addCategory(name);
+            CategoryDTO newCategory = categoryService.createCategory(categoryRequest);
             return ResponseEntity.ok(new ApiResponse("success", newCategory));
         } catch (AlreadyExistsException e) {
             return ResponseEntity.status(CONFLICT).body(new ApiResponse(e.getMessage(), null));

@@ -27,7 +27,7 @@ public class ApplicationInitConfig {
         return args -> {
             if (userRepository.findByUsername("admin").isEmpty()) {
                 User user = new User();
-                user.setUsername("admin");
+                userq.setUsername("admin");
                 user.setFullname("Admin");
                 user.setPassword(passwordEncoder.encode("12345"));
                 user.setVerified(true);
