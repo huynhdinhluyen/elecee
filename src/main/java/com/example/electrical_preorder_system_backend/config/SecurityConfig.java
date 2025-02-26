@@ -31,13 +31,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    @Value("${api.prefix}")
-    private String apiPrefix;
-
-    private final UserDetailsService userDetailsService;
-    private final AuthEntryPointJwt unauthorizedHandler;
-    private final CustomAccessDeniedHandler customAccessDeniedHandler;
-
     private static final List<Map.Entry<String, HttpMethod>> SECURED_URLS = List.of(
             Map.entry("/user", HttpMethod.POST),
             Map.entry("/user/sign-up", HttpMethod.POST),
@@ -48,6 +41,11 @@ public class SecurityConfig {
             Map.entry("/categories", HttpMethod.PUT),
             Map.entry("/categories", HttpMethod.DELETE)
     );
+    private final UserDetailsService userDetailsService;
+    private final AuthEntryPointJwt unauthorizedHandler;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
+    @Value("${api.prefix}")
+    private String apiPrefix;
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {

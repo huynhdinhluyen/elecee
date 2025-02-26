@@ -5,6 +5,7 @@ import com.example.electrical_preorder_system_backend.dto.request.UpdateCampaign
 import com.example.electrical_preorder_system_backend.dto.response.ApiResponse;
 import com.example.electrical_preorder_system_backend.dto.response.CampaignDTO;
 import com.example.electrical_preorder_system_backend.service.campaign.ICampaignService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -39,12 +41,16 @@ public class CampaignController {
     }
 
     @PostMapping
+    @SecurityRequirement(name = "Bearer Authentication")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse> createCampaign(@RequestBody @Valid CreateCampaignRequest request) {
         CampaignDTO campaignDTO = campaignService.createCampaign(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse("Campaign created successfully", campaignDTO));
     }
 
     @PutMapping("/{id}")
+    @SecurityRequirement(name = "Bearer Authentication")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse> updateCampaign(@PathVariable UUID id,
                                                       @RequestBody @Valid UpdateCampaignRequest request) {
         CampaignDTO campaignDTO = campaignService.updateCampaign(id, request);
@@ -52,6 +58,8 @@ public class CampaignController {
     }
 
     @DeleteMapping("/{id}")
+    @SecurityRequirement(name = "Bearer Authentication")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse> deleteCampaign(@PathVariable UUID id) {
         campaignService.deleteCampaign(id);
         return ResponseEntity.ok(new ApiResponse("Campaign deleted successfully", id));
