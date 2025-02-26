@@ -6,5 +6,6 @@ import com.example.electrical_preorder_system_backend.dto.response.Authenticatio
 public interface IAuthenticationService {
 
     String generateAuthUrl(String loginType);
+
     AuthenticationResponse login(UserLoginRequest userLoginRequest);
 }
