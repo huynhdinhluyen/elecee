@@ -24,6 +24,7 @@ public class UserDTO {
      String phoneNumber;
      UserStatus status;
      UserRole role;
+     String address;
      boolean isVerified = false;
      LocalDateTime createdAt;
      LocalDateTime updatedAt;
