@@ -40,7 +40,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
         try {
             String jwt = parseJwt(request);
-            if(jwt != null && jwtUtils.validateToken(jwt)){
+            if (jwt != null && jwtUtils.validateToken(jwt)) {
                 String username = jwtUtils.getSubjectFromToken(jwt);
 
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);

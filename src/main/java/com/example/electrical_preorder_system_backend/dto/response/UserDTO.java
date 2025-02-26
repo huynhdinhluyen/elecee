@@ -17,15 +17,15 @@ import java.util.UUID;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserDTO {
-     UUID id;
-     String username;
-     String fullname;
-     String email;
-     String phoneNumber;
-     UserStatus status;
-     UserRole role;
-     String address;
-     boolean isVerified = false;
-     LocalDateTime createdAt;
-     LocalDateTime updatedAt;
+    UUID id;
+    String username;
+    String fullname;
+    String email;
+    String phoneNumber;
+    UserStatus status;
+    UserRole role;
+    String address;
+    boolean isVerified = false;
+    LocalDateTime createdAt;
+    LocalDateTime updatedAt;
 }

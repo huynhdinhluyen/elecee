@@ -32,18 +32,18 @@ public class AuthenticationController {
     public ResponseEntity<AuthenticationResponse> callback(
             @RequestParam("code") String code,
             @RequestParam("login_type") String loginType
-    ){
+    ) {
         loginType = loginType.trim().toLowerCase();
-        if (loginType.equals("google")){
+        if (loginType.equals("google")) {
             return ResponseEntity.ok(userService.googleLogin(code));
-        }else{
+        } else {
             throw new RuntimeException("Invalid login type");
         }
     }
 
     @PostMapping("/login")
     public ResponseEntity<AuthenticationResponse> login(
-            @Valid @RequestBody UserLoginRequest userLoginRequest){
+            @Valid @RequestBody UserLoginRequest userLoginRequest) {
         return ResponseEntity.ok(authenticationService.login(userLoginRequest));
     }
 }

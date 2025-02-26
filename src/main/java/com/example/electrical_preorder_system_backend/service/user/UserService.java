@@ -36,34 +36,31 @@ public class UserService implements IUserService {
     private final JwtUtils jwtUtils;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
-    @Value("${spring.security.oauth2.client.registration.google.client-id}")
-    private String clientId;
-
-    @Value("${spring.security.oauth2.client.registration.google.client-secret}")
-    private String clientSecret;
-
-    @Value("${spring.security.oauth2.client.registration.google.redirect-uri}")
-    private String redirectUri;
     private final GoogleIdentityClient googleIdentityClient;
     private final GoogleUserClient googleUserClient;
+    @Value("${spring.security.oauth2.client.registration.google.client-id}")
+    private String clientId;
+    @Value("${spring.security.oauth2.client.registration.google.client-secret}")
+    private String clientSecret;
+    @Value("${spring.security.oauth2.client.registration.google.redirect-uri}")
+    private String redirectUri;
 
     @Override
 
-    public UserDTO signUp(UserSignUpRequest userSignInRequest){
+    public UserDTO signUp(UserSignUpRequest userSignInRequest) {
         if (userRepository.existsByUsername(userSignInRequest.getUsername())) {
             throw new RuntimeException("SignUp failed: Username already exists");
-        }else if (userRepository.existsByEmail(userSignInRequest.getEmail())) {
+        } else if (userRepository.existsByEmail(userSignInRequest.getEmail())) {
             throw new RuntimeException("SignUp failed: Email already exists");
-        }else if (userRepository.existsByPhoneNumber(userSignInRequest.getPhoneNumber())){
+        } else if (userRepository.existsByPhoneNumber(userSignInRequest.getPhoneNumber())) {
             throw new RuntimeException("SignUp failed: Phone number already exists");
         }
         String role = userSignInRequest.getRole();
         if (!isValidRole(role) || !role.equals(UserRole.ROLE_STAFF.name())) {
             throw new RuntimeException("SignUp failed: Invalid role");
         }
-        try{
-            User user =  User.builder()
+        try {
+            User user = User.builder()
                     .username(userSignInRequest.getUsername())
                     .password(passwordEncoder.encode(userSignInRequest.getPassword()))
                     .fullname(userSignInRequest.getFullname())
@@ -71,7 +68,7 @@ public class UserService implements IUserService {
                     .phoneNumber(userSignInRequest.getPhoneNumber())
                     .role(UserRole.valueOf(role))
                     .isVerified(false)
-                    .status(userSignInRequest.isActive()? UserStatus.ACTIVE: UserStatus.INACTIVE)
+                    .status(userSignInRequest.isActive() ? UserStatus.ACTIVE : UserStatus.INACTIVE)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();
@@ -80,14 +77,14 @@ public class UserService implements IUserService {
             user.setToken(jwtToken);
             user.setTokenExpires(LocalDateTime.ofInstant(jwtUtils.getExpDateFromToken(jwtToken).toInstant(), ZoneId.systemDefault()));
             return UserMapper.toUserDTO(userRepository.save(user));
-        }catch(TransactionSystemException ex) {
+        } catch (TransactionSystemException ex) {
             log.error("Transaction failed: ", ex);
             throw new RuntimeException("Sign-up failed due to transaction error", ex);
         }
     }
 
     @Override
-    public AuthenticationResponse googleLogin(String code){
+    public AuthenticationResponse googleLogin(String code) {
         try {
 
             var response = googleIdentityClient.exchangeToken(ExchangeTokenRequest.builder()
@@ -118,7 +115,7 @@ public class UserService implements IUserService {
             user.setTokenExpires(LocalDateTime.ofInstant(jwtUtils.getExpDateFromToken(token).toInstant(), ZoneId.systemDefault()));
             userRepository.save(user);
             return new AuthenticationResponse(token);
-        }catch (Exception e){
+        } catch (Exception e) {
 //            e.printStackTrace();
             throw new RuntimeException("Google login failed", e);
         }
@@ -139,13 +136,13 @@ public class UserService implements IUserService {
         String username = jwtUtils.getSubjectFromToken(token);
         // Check if the token is not expired
 
-        if (!expDate.before(new Date())){
+        if (!expDate.before(new Date())) {
             User user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
             user.setVerified(true);
             userRepository.save(user);
-        }else {
+        } else {
             throw new RuntimeException("Token expired");
         }
     }
