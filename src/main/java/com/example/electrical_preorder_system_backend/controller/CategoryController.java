@@ -34,10 +34,15 @@ public class CategoryController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse> createCategory(@RequestBody @Valid CreateCategoryRequest request) {
-        CategoryDTO category = categoryService.createCategory(request);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponse("Category created successfully", category));
+    @SecurityRequirement(name = "Bearer Authentication")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ApiResponse> addCategory(@RequestBody Category name) {
+        try {
+            Category newCategory = categoryService.addCategory(name);
+            return ResponseEntity.ok(new ApiResponse("success", newCategory));
+        } catch (AlreadyExistsException e) {
+            return ResponseEntity.status(CONFLICT).body(new ApiResponse(e.getMessage(), null));
+        }
     }
 
     @PutMapping("/{id}")
@@ -48,8 +53,14 @@ public class CategoryController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse> deleteCategory(@PathVariable UUID id) {
-        categoryService.deleteCategoryById(id);
-        return ResponseEntity.ok(new ApiResponse("Category deleted successfully", id));
+    @SecurityRequirement(name = "Bearer Authentication")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public ResponseEntity<ApiResponse> deleteCategoryById(@PathVariable UUID id) {
+        try {
+            categoryService.deleteCategoryById(id);
+            return ResponseEntity.ok(new ApiResponse("success", null));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
+        }
     }
 }

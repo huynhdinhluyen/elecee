@@ -28,7 +28,6 @@ public class UserDetailsImpl implements UserDetails {
     private static final Logger log = LoggerFactory.getLogger(UserDetailsImpl.class);
     private UUID id;
     private String username;
-    private String email;
     @JsonIgnore
     private String password;
     private Collection<GrantedAuthority> authorities;
@@ -36,7 +35,7 @@ public class UserDetailsImpl implements UserDetails {
     public static UserDetailsImpl build(User user) {
         GrantedAuthority authority = new SimpleGrantedAuthority(user.getRole().toString());
         log.info("UserDetailsImpl.build authority: {} : {}", authority, user.getRole().toString());
-        return new UserDetailsImpl(user.getId(), user.getUsername(), user.getEmail(), user.getPassword(), List.of(authority));
+        return new UserDetailsImpl(user.getId(), user.getUsername(), user.getPassword(), List.of(authority));
     }
 
     @Override

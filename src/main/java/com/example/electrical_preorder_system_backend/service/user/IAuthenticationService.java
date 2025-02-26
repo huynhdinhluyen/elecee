@@ -1,10 +1,10 @@
 package com.example.electrical_preorder_system_backend.service.user;
 
-import java.util.Map;
+import com.example.electrical_preorder_system_backend.dto.request.UserLoginRequest;
+import com.example.electrical_preorder_system_backend.dto.response.AuthenticationResponse;
 
 public interface IAuthenticationService {
 
     String generateAuthUrl(String loginType);
-
-    Map<String, Object> authenticateAndFetchUser(String code, String loginType) throws Exception;
+    AuthenticationResponse login(UserLoginRequest userLoginRequest);
 }

@@ -13,21 +13,18 @@ import java.util.UUID;
 @NoArgsConstructor
 @Setter
 @Getter
+@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserDTO {
-
-    UUID id;
-    String username;
-    String fullname;
-    String email;
-    String phoneNumber;
-    UserStatus status;
-    UserRole role;
-    boolean isVerified = false;
-    //    private String token;
-//    private LocalDateTime tokenExpires;
-//    private List<Order> orders = new ArrayList<>();
-    LocalDateTime createdAt;
-    LocalDateTime updatedAt;
+     UUID id;
+     String username;
+     String fullname;
+     String email;
+     String phoneNumber;
+     UserStatus status;
+     UserRole role;
+     boolean isVerified = false;
+     LocalDateTime createdAt;
+     LocalDateTime updatedAt;
 }
