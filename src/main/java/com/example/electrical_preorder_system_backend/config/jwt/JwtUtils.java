@@ -62,14 +62,14 @@ public class JwtUtils {
         return false;
     }
 
-    public String generateToken(User user, String provider) {
-        Map<String, Object> claims = new HashMap<>();
+    public String generateTokenFromUsername(String username) {
+        Map<String,Object> claims = new HashMap<>();
+        User user = userRepository.findByUsername(username).get();
         claims.put("role", user.getRole());
         claims.put("fullName", user.getFullname());
-        claims.put("provider", provider);
         try {
             return Jwts.builder()
-                    .subject(getSubject(user))
+                    .subject(username)
                     .issuer("elecee")
                     .claims(claims)
                     .signWith(getSecretKey(), Jwts.SIG.HS256)
@@ -83,16 +83,7 @@ public class JwtUtils {
         return null;
     }
 
-    public String generateToken(UserDetailsImpl userDetailsImpl, String provider) {
-        Optional<User> userOptional = userRepository.findByUsername(userDetailsImpl.getUsername());
-        if (userOptional.isEmpty()) {
-            log.error("User not fount: {}", userDetailsImpl.getUsername());
-            throw new RuntimeException("User not found");
-        }
-        return generateToken(userOptional.get(), provider);
-    }
-
-    public String generateVerificationToken(String email) {
+    public String generateVerificationToken(String email){
         return Jwts.builder()
                 .subject(email)
                 .issuer("elecee")
@@ -103,7 +94,7 @@ public class JwtUtils {
                 .compact();
     }
 
-    public Date getExpDateFromToken(String token) {
+    public Date getExpDateFromToken(String token){
         try {
             return Jwts
                     .parser()
@@ -133,4 +124,7 @@ public class JwtUtils {
         return null;
     }
 
+    public String generateJwtToken(UserDetailsImpl userPrincipal){
+        return generateTokenFromUsername(userPrincipal.getUsername());
+    }
 }

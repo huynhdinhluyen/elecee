@@ -1,18 +1,17 @@
 package com.example.electrical_preorder_system_backend.service.user;
 
-import com.example.electrical_preorder_system_backend.dto.request.UserLoginRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UserSignUpRequest;
-import com.example.electrical_preorder_system_backend.entity.User;
+import com.example.electrical_preorder_system_backend.dto.response.AuthenticationResponse;
+import com.example.electrical_preorder_system_backend.dto.response.UserDTO;
 import jakarta.mail.MessagingException;
 
 public interface IUserService {
 
-    User signUp(UserSignUpRequest userSignInRequest) throws MessagingException;
+    UserDTO signUp(UserSignUpRequest userSignInRequest) throws MessagingException;
 
-    String googeLogin(UserLoginRequest userLoginRequest) throws MessagingException;
-
-    Boolean isValidGoogleId(UserLoginRequest userLoginRequest);
+    AuthenticationResponse googleLogin(String code) throws MessagingException;
 
     void verifyEmail(String token);
+
 
 }
