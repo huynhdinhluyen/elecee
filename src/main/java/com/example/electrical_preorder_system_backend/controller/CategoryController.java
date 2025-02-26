@@ -5,7 +5,6 @@ import com.example.electrical_preorder_system_backend.dto.request.UpdateCategory
 import com.example.electrical_preorder_system_backend.dto.response.ApiResponse;
 import com.example.electrical_preorder_system_backend.dto.response.CategoryDTO;
 import com.example.electrical_preorder_system_backend.exception.AlreadyExistsException;
-import com.example.electrical_preorder_system_backend.exception.ResourceNotFoundException;
 import com.example.electrical_preorder_system_backend.service.category.ICategoryService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
@@ -18,7 +17,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.springframework.http.HttpStatus.CONFLICT;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @RestController
 @RequiredArgsConstructor
@@ -52,6 +50,8 @@ public class CategoryController {
     }
 
     @PutMapping("/{id}")
+    @SecurityRequirement(name = "Bearer Authentication")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse> updateCategory(@PathVariable UUID id,
                                                       @RequestBody @Valid UpdateCategoryRequest request) {
         CategoryDTO updatedCategory = categoryService.updateCategory(id, request);
@@ -62,11 +62,7 @@ public class CategoryController {
     @SecurityRequirement(name = "Bearer Authentication")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse> deleteCategoryById(@PathVariable UUID id) {
-        try {
-            categoryService.deleteCategoryById(id);
-            return ResponseEntity.ok(new ApiResponse("success", null));
-        } catch (ResourceNotFoundException e) {
-            return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
-        }
+        categoryService.deleteCategoryById(id);
+        return ResponseEntity.ok(new ApiResponse("success", null));
     }
 }
