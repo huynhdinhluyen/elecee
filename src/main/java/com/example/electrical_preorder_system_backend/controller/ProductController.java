@@ -84,7 +84,7 @@ public class ProductController {
     public ResponseEntity<ApiResponse> updateProduct(
             @PathVariable UUID id,
             @RequestPart("product") UpdateProductRequest request,
-            @RequestPart(value = "files", required = false) List<MultipartFile> imageFiles) {
+            @RequestPart(value = "imageFiles", required = false) List<MultipartFile> imageFiles) {
         Product updatedProduct = productService.updateProduct(request, id, imageFiles);
         return ResponseEntity.ok(new ApiResponse("Product updated successfully", productService.convertToDto(updatedProduct)));
     }
