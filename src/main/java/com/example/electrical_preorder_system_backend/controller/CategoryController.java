@@ -1,36 +1,36 @@
 package com.example.electrical_preorder_system_backend.controller;
 
+import com.example.electrical_preorder_system_backend.dto.request.CreateCategoryRequest;
+import com.example.electrical_preorder_system_backend.dto.request.UpdateCategoryRequest;
 import com.example.electrical_preorder_system_backend.dto.response.ApiResponse;
-import com.example.electrical_preorder_system_backend.entity.Category;
-import com.example.electrical_preorder_system_backend.exception.AlreadyExistsException;
-import com.example.electrical_preorder_system_backend.exception.ResourceNotFoundException;
+import com.example.electrical_preorder_system_backend.dto.response.CategoryDTO;
 import com.example.electrical_preorder_system_backend.service.category.ICategoryService;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
 
-import static org.springframework.http.HttpStatus.*;
-
-@RequiredArgsConstructor
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("${api.prefix}/categories")
 public class CategoryController {
+
     private final ICategoryService categoryService;
 
     @GetMapping
     public ResponseEntity<ApiResponse> getAllCategories() {
-        try {
-            List<Category> categories = categoryService.getAllCategories();
-            return ResponseEntity.ok(new ApiResponse("success", categories));
-        } catch (Exception e) {
-            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse("error", INTERNAL_SERVER_ERROR));
-        }
+        List<CategoryDTO> categories = categoryService.getAllCategories();
+        return ResponseEntity.ok(new ApiResponse("Categories retrieved successfully", categories));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse> getCategoryById(@PathVariable UUID id) {
+        CategoryDTO category = categoryService.getCategoryById(id);
+        return ResponseEntity.ok(new ApiResponse("Category retrieved successfully", category));
     }
 
     @PostMapping
@@ -45,14 +45,11 @@ public class CategoryController {
         }
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse> getCategoryById(@PathVariable UUID id) {
-        try {
-            Category category = categoryService.getCategoryById(id);
-            return ResponseEntity.ok(new ApiResponse("success", category));
-        } catch (ResourceNotFoundException e) {
-            return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
-        }
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse> updateCategory(@PathVariable UUID id,
+                                                      @RequestBody @Valid UpdateCategoryRequest request) {
+        CategoryDTO updatedCategory = categoryService.updateCategory(id, request);
+        return ResponseEntity.ok(new ApiResponse("Category updated successfully", updatedCategory));
     }
 
     @DeleteMapping("/{id}")

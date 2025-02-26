@@ -53,9 +53,7 @@ public class AuthenticationService implements IAuthenticationService {
                 + "client_id=" + clientId
                 + "&redirect_uri=" + redirectUri
                 + "&response_type=code&scope=email%20profile";
-
         }
         return url;
     }
-
 }

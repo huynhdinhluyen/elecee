@@ -36,12 +36,12 @@ public class UserController {
     @PostMapping("/verify")
     public ResponseEntity<?> verify(
             @NonNull @RequestBody EmailVerificationRequest request
-    ){
-        try{
+    ) {
+        try {
             log.info("Email verification request: {}", request.toString());
             userService.verifyEmail(request.getToken());
             return ResponseEntity.ok("Email verified successfully");
-        }catch (Exception e){
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }

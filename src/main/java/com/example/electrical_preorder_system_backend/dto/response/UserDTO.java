@@ -5,6 +5,7 @@ import com.example.electrical_preorder_system_backend.enums.UserStatus;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -16,7 +17,6 @@ import java.util.UUID;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserDTO {
-
      UUID id;
      String username;
      String fullname;

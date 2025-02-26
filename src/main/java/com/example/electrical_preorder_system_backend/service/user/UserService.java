@@ -45,6 +45,7 @@ public class UserService implements IUserService {
     private final GoogleUserClient googleUserClient;
 
     @Override
+
     public UserDTO signUp(UserSignUpRequest userSignInRequest){
         if (userRepository.existsByUsername(userSignInRequest.getUsername())) {
             throw new RuntimeException("SignUp failed: Username already exists");
@@ -133,6 +134,7 @@ public class UserService implements IUserService {
         Date expDate = jwtUtils.getExpDateFromToken(token);
         String username = jwtUtils.getSubjectFromToken(token);
         // Check if the token is not expired
+
         if (!expDate.before(new Date())){
             User user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new RuntimeException("User not found"));

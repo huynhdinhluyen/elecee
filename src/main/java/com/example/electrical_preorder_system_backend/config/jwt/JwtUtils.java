@@ -3,7 +3,10 @@ package com.example.electrical_preorder_system_backend.config.jwt;
 import com.example.electrical_preorder_system_backend.config.utils.UserDetailsImpl;
 import com.example.electrical_preorder_system_backend.entity.User;
 import com.example.electrical_preorder_system_backend.repository.UserRepository;
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +30,12 @@ public class JwtUtils {
     @Autowired
     private UserRepository userRepository;
 
+    //If login with Google, the subject will be the email
+    //If login with username and password, the subject will be the username
+    public static String getSubject(User user) {
+        return user.getUsername();
+    }
+
     private SecretKey getSecretKey() {
         byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
         return Keys.hmacShaKeyFor(keyBytes);
@@ -35,13 +44,13 @@ public class JwtUtils {
     public boolean validateToken(String jwtToken) {
         try {
             Jwts
-                .parser()
-                .requireIssuer("elecee")
-                .verifyWith(getSecretKey())
-                .build()
-                .parseSignedClaims(jwtToken);
+                    .parser()
+                    .requireIssuer("elecee")
+                    .verifyWith(getSecretKey())
+                    .build()
+                    .parseSignedClaims(jwtToken);
             return true;
-        }catch (SecurityException | MalformedJwtException e){
+        } catch (SecurityException | MalformedJwtException e) {
             log.error("Invalid JWT token: {}", e.getMessage());
         } catch (ExpiredJwtException e) {
             log.error("JWT token is expired: {}", e.getMessage());

@@ -1,4 +1,5 @@
 package com.example.electrical_preorder_system_backend.service.product;
+
 import com.example.electrical_preorder_system_backend.dto.request.CreateProductRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UpdateProductRequest;
 import com.example.electrical_preorder_system_backend.dto.response.CategoryDTO;
@@ -26,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -39,21 +41,24 @@ public class ProductService implements IProductService {
     @Override
     @CacheEvict(value = "products", allEntries = true)
     public Product addProduct(CreateProductRequest request, List<MultipartFile> files) {
-        if (productRepository.existsByProductCode(request.getProductCode().trim())) {
+        String productCode = request.getProductCode().trim();
+        if (productRepository.existsByProductCode(productCode)) {
             throw new AlreadyExistsException("Product code '" + request.getProductCode() + "' already exists.");
         }
 
-        // Lấy hoặc tạo mới Category
         String categoryName = request.getCategory().getName().trim();
         Category category = categoryRepository.findByName(categoryName);
         if (category == null) {
             category = new Category(categoryName);
             category = categoryRepository.save(category);
         }
+        CategoryDTO categoryDto = new CategoryDTO();
+        categoryDto.setId(category.getId());
+        categoryDto.setName(category.getName());
+        request.setCategory(categoryDto);
 
-        // Tạo đối tượng Product mới
         Product product = new Product(
-                request.getProductCode(),
+                productCode,
                 request.getName().trim(),
                 request.getQuantity(),
                 request.getDescription(),
@@ -64,24 +69,27 @@ public class ProductService implements IProductService {
         product.setStatus(ProductStatus.AVAILABLE);
         product.setSlug(generateUniqueSlug(product.getName()));
 
-        // Xử lý file upload: Upload từng file qua Cloudinary trong tầng service
         if (files != null && !files.isEmpty()) {
+            List<CompletableFuture<String>> futures = files.stream()
+                    .map(cloudinaryService::uploadFileAsync)
+                    .toList();
+            List<String> imageUrls = futures.stream()
+                    .map(CompletableFuture::join)
+                    .toList();
             Product finalProduct = product;
-            List<ImageProduct> imageProducts = files.stream().map(file -> {
-                // Thực hiện upload file qua CloudinaryService
-                String imageUrl = cloudinaryService.uploadFile(file);
-                ImageProduct img = new ImageProduct();
-                img.setAltText(file.getOriginalFilename());
-                img.setImageUrl(imageUrl);
-                img.setProduct(finalProduct);
-                return img;
+            List<ImageProduct> imageProducts = imageUrls.stream().map(url -> {
+                ImageProduct image = new ImageProduct();
+                image.setAltText(request.getName());
+                image.setImageUrl(url);
+                image.setProduct(finalProduct);
+                image.setDeleted(false);
+                return image;
             }).collect(Collectors.toList());
             product.setImageProducts(imageProducts);
         }
 
         product = productRepository.save(product);
 
-        // Điều chỉnh vị trí nếu cần
         if (request.getPosition() != null) {
             adjustPositions(product, request.getPosition());
         }
@@ -89,7 +97,7 @@ public class ProductService implements IProductService {
     }
 
     @Override
-    @Cacheable(value = "products", key = "#pageable.pageNumber + '-' + #pageable.pageSize")
+    @Cacheable(value = "products", key = "#pageable.pageNumber + '-' + #pageable.pageSize + '-' + #pageable.sort.toString()")
     public Page<Product> getProducts(Pageable pageable) {
         return productRepository.findActiveProductsSorted(pageable);
     }
@@ -100,10 +108,24 @@ public class ProductService implements IProductService {
     }
 
     @Override
+    public Page<Product> getProductsByName(String name, Pageable pageable) {
+        return productRepository.findByNameContainingIgnoreCaseAndIsDeletedFalse(name, pageable);
+    }
+
+    @Override
     public Product getProductById(UUID id) {
         return productRepository.findById(id)
                 .filter(p -> !p.isDeleted())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found!"));
+    }
+
+    @Override
+    public Product getProductByProductCode(String productCode) {
+        Product product = productRepository.findByProductCode(productCode.trim());
+        if (product == null || product.isDeleted()) {
+            throw new ResourceNotFoundException("Product not found with code: " + productCode);
+        }
+        return product;
     }
 
     @Override
@@ -122,29 +144,36 @@ public class ProductService implements IProductService {
     }
 
     private Product updateExistingProduct(Product existingProduct, UpdateProductRequest request, List<MultipartFile> files) {
+        updateBasicFields(existingProduct, request);
+        updateCategory(existingProduct, request);
+        updateImageProducts(existingProduct, request, files);
+        return existingProduct;
+    }
+
+    private void updateBasicFields(Product product, UpdateProductRequest request) {
         if (request.getProductCode() != null && !request.getProductCode().isBlank()) {
-            existingProduct.setProductCode(request.getProductCode().trim());
+            product.setProductCode(request.getProductCode().trim());
         }
         if (request.getName() != null && !request.getName().isBlank()) {
             String newName = request.getName().trim();
-            existingProduct.setName(newName);
-            existingProduct.setSlug(generateUniqueSlug(newName));
+            product.setName(newName);
+            product.setSlug(generateUniqueSlug(newName));
         }
         if (request.getQuantity() != null) {
-            existingProduct.setQuantity(request.getQuantity());
+            product.setQuantity(request.getQuantity());
         }
         if (request.getDescription() != null && !request.getDescription().isBlank()) {
-            existingProduct.setDescription(request.getDescription());
+            product.setDescription(request.getDescription());
         }
         if (request.getPrice() != null) {
-            existingProduct.setPrice(request.getPrice());
+            product.setPrice(request.getPrice());
         }
-        if (request.getPosition() != null) {
-            int newPosition = request.getPosition();
-            if (!Integer.valueOf(newPosition).equals(existingProduct.getPosition())) {
-                adjustPositions(existingProduct, newPosition);
-            }
+        if (request.getPosition() != null && !request.getPosition().equals(product.getPosition())) {
+            adjustPositions(product, request.getPosition());
         }
+    }
+
+    private void updateCategory(Product product, UpdateProductRequest request) {
         if (request.getCategory() != null &&
                 request.getCategory().getName() != null &&
                 !request.getCategory().getName().isBlank()) {
@@ -153,26 +182,35 @@ public class ProductService implements IProductService {
             if (category == null) {
                 throw new ResourceNotFoundException("Category not found!");
             }
-            existingProduct.setCategory(category);
+            product.setCategory(category);
         }
+    }
 
+    private void updateImageProducts(Product product, UpdateProductRequest request, List<MultipartFile> files) {
         if (files != null && !files.isEmpty()) {
-            if (existingProduct.getImageProducts() != null) {
-                existingProduct.getImageProducts().forEach(img -> img.setDeleted(true));
+            // Soft-delete all existing images
+            if (product.getImageProducts() != null) {
+                product.getImageProducts().forEach(img -> img.setDeleted(true));
             }
-            List<ImageProduct> newImages = files.stream().map(file -> {
-                String imageUrl = cloudinaryService.uploadFile(file);
-                ImageProduct newImage = new ImageProduct();
-                newImage.setAltText(file.getOriginalFilename());
-                newImage.setImageUrl(imageUrl);
-                newImage.setDeleted(false);
-                newImage.setProduct(existingProduct);
-                return newImage;
+            // Asynchronously upload each new image and wait for the URLs
+            List<CompletableFuture<String>> futures = files.stream()
+                    .map(cloudinaryService::uploadFileAsync)
+                    .toList();
+            List<String> imageUrls = futures.stream()
+                    .map(CompletableFuture::join)
+                    .toList();
+            // Map each URL to a new ImageProduct entity
+            List<ImageProduct> newImages = imageUrls.stream().map(url -> {
+                ImageProduct ip = new ImageProduct();
+                // Here we use the product name as alt text; adjust as needed.
+                ip.setAltText(request.getName());
+                ip.setImageUrl(url);
+                ip.setDeleted(false);
+                ip.setProduct(product);
+                return ip;
             }).collect(Collectors.toList());
-            existingProduct.setImageProducts(newImages);
+            product.setImageProducts(newImages);
         }
-
-        return existingProduct;
     }
 
     @Override
@@ -185,8 +223,24 @@ public class ProductService implements IProductService {
     }
 
     @Override
+    @CacheEvict(value = "products", allEntries = true)
+    public void deleteProducts(List<UUID> ids) {
+        List<Product> products = productRepository.findAllById(ids)
+                .stream()
+                .filter(p -> !p.isDeleted())
+                .collect(Collectors.toList());
+
+        if (products.size() != ids.size()) {
+            throw new ResourceNotFoundException("Some products were not found or already deleted.");
+        }
+
+        products.forEach(p -> p.setDeleted(true));
+        productRepository.saveAll(products);
+    }
+
+    @Override
     public Long countProducts() {
-        return productRepository.count();
+        return productRepository.countActiveProducts();
     }
 
     @Override
@@ -258,16 +312,30 @@ public class ProductService implements IProductService {
             }
             activeProducts.add(newPosition - 1, product);
 
-            // Cập nhật lại thứ tự vị trí
             int pos = 1;
             for (Product p : activeProducts) {
                 p.setPosition(pos++);
             }
 
-            // Batch update để giảm số lần gọi cơ sở dữ liệu
             productRepository.saveAll(activeProducts);
         } catch (Exception ex) {
             log.error("Error adjusting product positions for product ID {}: {}", product.getId(), ex.getMessage(), ex);
         }
+    }
+
+    @Override
+    public Page<Product> searchProducts(String query, Pageable pageable) {
+        if (query == null || query.isBlank()) {
+            return getProducts(pageable);
+        }
+        return productRepository.searchProducts(query, pageable);
+    }
+
+    @Override
+    public Page<Product> searchProducts(String query, String category, Pageable pageable) {
+        if (query == null || query.isBlank()) {
+            return productRepository.findByCategory_NameAndIsDeletedFalse(category, pageable);
+        }
+        return productRepository.searchProductsByCategory(query, category, pageable);
     }
 }

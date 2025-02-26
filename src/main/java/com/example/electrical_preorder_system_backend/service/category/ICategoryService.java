@@ -1,20 +1,20 @@
 package com.example.electrical_preorder_system_backend.service.category;
 
-import com.example.electrical_preorder_system_backend.entity.Category;
+import com.example.electrical_preorder_system_backend.dto.request.CreateCategoryRequest;
+import com.example.electrical_preorder_system_backend.dto.request.UpdateCategoryRequest;
+import com.example.electrical_preorder_system_backend.dto.response.CategoryDTO;
 
 import java.util.List;
 import java.util.UUID;
 
 public interface ICategoryService {
-    Category getCategoryById(UUID id);
+    List<CategoryDTO> getAllCategories();
 
-    Category getCategoryByName(String name);
+    CategoryDTO getCategoryById(UUID id);
 
-    List<Category> getAllCategories();
+    CategoryDTO createCategory(CreateCategoryRequest request);
 
-    Category addCategory(Category category);
-
-    Category updateCategory(Category category, UUID id);
+    CategoryDTO updateCategory(UUID id, UpdateCategoryRequest request);
 
     void deleteCategoryById(UUID id);
 }

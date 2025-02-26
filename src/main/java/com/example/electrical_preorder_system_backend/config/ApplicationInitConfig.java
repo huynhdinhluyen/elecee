@@ -25,7 +25,6 @@ public class ApplicationInitConfig {
     @Bean
     ApplicationRunner init() {
         return args -> {
-
             if (userRepository.findByUsername("admin").isEmpty()) {
                 User user = new User();
                 user.setUsername("admin");

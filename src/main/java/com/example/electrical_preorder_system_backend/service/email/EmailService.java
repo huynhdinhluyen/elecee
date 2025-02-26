@@ -50,13 +50,13 @@ public class EmailService implements IEmailService {
     }
 
     @Override
-    public String subjectRegister(){
+    public String subjectRegister() {
         return "Elecee - Verify your email";
     }
 
     @Override
     public String bodyRegister(String email, String fullName) {
-        String verificationUrl = " <a href=\""+ clientUrl + "verify?token=" + jwtUtils.generateVerificationToken(email) + " \" class=\"button\">Verify Email Address</a>\n";
+        String verificationUrl = " <a href=\"" + clientUrl + "verify?token=" + jwtUtils.generateVerificationToken(email) + " \" class=\"button\">Verify Email Address</a>\n";
         log.info("Verification URL: {}", verificationUrl);
         return "<!DOCTYPE html>\n"
                 + "<html lang=\"en\">\n"
@@ -121,12 +121,12 @@ public class EmailService implements IEmailService {
                 + "    </div>\n"
                 + "    <div class=\"content\">\n"
                 + "      <div class=\"timestamp\">\n"
-                + "        Sent on: "+ LocalDate.now() +"\n"
+                + "        Sent on: " + LocalDate.now() + "\n"
                 + "      </div>\n"
-                + "      <p>Hello "+ fullName +",</p>\n"
+                + "      <p>Hello " + fullName + ",</p>\n"
                 + "      <p>Thank you for registering with Elecee. To ensure the security of your account, please verify your email address by clicking the button below:</p>\n"
                 + "      <div style=\"text-align: center;\">\n"
-                + "        <a href=\""+ clientUrl + "verify?token=" + jwtUtils.generateVerificationToken(email) + " \" class=\"button\">Verify Email Address</a>\n"
+                + "        <a href=\"" + clientUrl + "verify?token=" + jwtUtils.generateVerificationToken(email) + " \" class=\"button\">Verify Email Address</a>\n"
                 + "      </div>\n"
                 + "      <p>If you did not create an account, please ignore this email.</p>\n"
                 + "      <p>Best regards,<br>The Elecee Team</p>\n"
@@ -139,8 +139,6 @@ public class EmailService implements IEmailService {
                 + "</body>\n"
                 + "</html>";
     }
-
-
 
 
 }
