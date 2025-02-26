@@ -9,6 +9,7 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +24,7 @@ import java.util.UUID;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class JwtUtils {
     @Value("${JWT_SECRET}")
     private String jwtSecret;
@@ -30,14 +32,7 @@ public class JwtUtils {
     @Value("${JWT_EXPIRATION}")
     private int jwtExpirationMs;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    //If login with Google, the subject will be the email
-    //If login with username and password, the subject will be the username
-    public static String getSubject(User user) {
-        return user.getUsername();
-    }
+    private final UserRepository userRepository;
 
     private SecretKey getSecretKey() {
         byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
@@ -68,6 +63,7 @@ public class JwtUtils {
     public String generateTokenFromUsername(String username) {
         Map<String, Object> claims = new HashMap<>();
         User user = userRepository.findByUsername(username).get();
+        claims.put("id", user.getId());
         claims.put("role", user.getRole());
         claims.put("fullName", user.getFullname());
         try {

@@ -4,6 +4,7 @@ import com.example.electrical_preorder_system_backend.config.client.GoogleIdenti
 import com.example.electrical_preorder_system_backend.config.client.GoogleUserClient;
 import com.example.electrical_preorder_system_backend.config.jwt.JwtUtils;
 import com.example.electrical_preorder_system_backend.dto.request.ExchangeTokenRequest;
+import com.example.electrical_preorder_system_backend.dto.request.UpdateUserRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UserSignUpRequest;
 import com.example.electrical_preorder_system_backend.dto.response.AuthenticationResponse;
 import com.example.electrical_preorder_system_backend.dto.response.UserDTO;
@@ -12,9 +13,12 @@ import com.example.electrical_preorder_system_backend.enums.UserRole;
 import com.example.electrical_preorder_system_backend.enums.UserStatus;
 import com.example.electrical_preorder_system_backend.mapper.UserMapper;
 import com.example.electrical_preorder_system_backend.repository.UserRepository;
+import com.example.electrical_preorder_system_backend.util.Validator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionSystemException;
@@ -142,5 +146,92 @@ public class UserService implements IUserService {
             throw new RuntimeException("Token expired");
         }
     }
+
+    @Override
+    public void update(UUID id, UpdateUserRequest updateUserRequest) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (user.getStatus().equals(UserStatus.INACTIVE)) {
+            throw new IllegalArgumentException("User is inactive, cannot update");
+        }
+        if (user.getStatus().equals(UserStatus.BANNED)) {
+            throw new IllegalArgumentException("User is banned, cannot update");
+        }
+        updateBasicInfo(user, updateUserRequest);
+        if (updateUserRequest.getCurrentPassword() != null && !updateUserRequest.getCurrentPassword().isEmpty()
+                && updateUserRequest.getNewPassword() != null && !updateUserRequest.getNewPassword().isEmpty()) {
+            updatePassword(user, updateUserRequest);
+        }
+    }
+
+    private void updateBasicInfo(User user, UpdateUserRequest updateUserRequest) {
+        if (updateUserRequest.getFullname() != null && !updateUserRequest.getFullname().isEmpty()) {
+            if (Validator.isValidFullname(updateUserRequest.getFullname())) {
+                //OK
+                user.setFullname(updateUserRequest.getFullname());
+            } else {
+                throw new IllegalArgumentException("Invalid fullname");
+            }
+        }
+        if (updateUserRequest.getAddress() != null && !updateUserRequest.getAddress().isEmpty()) {
+            if (Validator.isValidAddress(updateUserRequest.getAddress())) {
+                //OK
+                user.setAddress(updateUserRequest.getAddress());
+            } else {
+                throw new IllegalArgumentException("Invalid address");
+            }
+        }
+        if (updateUserRequest.getPhoneNumber() != null && !updateUserRequest.getPhoneNumber().isEmpty()) {
+            if (userRepository.existsByPhoneNumber(updateUserRequest.getPhoneNumber())) {
+                throw new IllegalArgumentException("Phone number already exists");
+            }
+            if (Validator.isValidPhoneNumber(updateUserRequest.getPhoneNumber())) {
+                //OK
+                user.setPhoneNumber(updateUserRequest.getPhoneNumber());
+            } else {
+                throw new IllegalArgumentException("Invalid phone number");
+            }
+        }
+    }
+
+    private void updatePassword(User user, UpdateUserRequest updateUserRequest) {
+        if (!passwordEncoder.matches(updateUserRequest.getCurrentPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Invalid current password");
+        }
+        if (!Validator.isValidPassword(updateUserRequest.getNewPassword())) {
+            throw new IllegalArgumentException("Invalid new password");
+        }
+        user.setPassword(passwordEncoder.encode(updateUserRequest.getNewPassword()));
+        userRepository.save(user);
+    }
+
+    public void delete(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (user.getStatus().equals(UserStatus.INACTIVE)) {
+            throw new IllegalArgumentException("User is inactive, cannot delete");
+        }
+        if (user.getStatus().equals(UserStatus.BANNED)) {
+            throw new IllegalArgumentException("User is banned, cannot delete");
+        }
+        user.setStatus(UserStatus.INACTIVE);
+        userRepository.save(user);
+    }
+
+    @Override
+    public UserDTO getById(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (user.getStatus().equals(UserStatus.INACTIVE)) {
+            throw new IllegalArgumentException("User is inactive");
+        }
+        return UserMapper.toUserDTO(user);
+    }
+
+    @Override
+    public Page<User> getUsers(Pageable pageable) {
+        return userRepository.findAll(pageable);
+    }
+
 
 }
