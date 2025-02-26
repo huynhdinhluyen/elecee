@@ -3,7 +3,6 @@ package com.example.electrical_preorder_system_backend.controller;
 import com.example.electrical_preorder_system_backend.dto.request.EmailVerificationRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UserSignUpRequest;
 import com.example.electrical_preorder_system_backend.dto.response.UserDTO;
-import com.example.electrical_preorder_system_backend.entity.User;
 import com.example.electrical_preorder_system_backend.service.user.UserService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.NonNull;
@@ -29,7 +28,7 @@ public class UserController {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<UserDTO> signUp(
             @NonNull @RequestBody UserSignUpRequest userSignUpRequest
-    ){
+    ) {
         return ResponseEntity.ok(userService.signUp(userSignUpRequest));
     }
 

@@ -18,14 +18,12 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthenticationService implements IAuthenticationService {
 
-    @Value("${spring.security.oauth2.client.registration.google.client-id}")
-    private String clientId;
-
-    @Value("${spring.security.oauth2.client.registration.google.redirect-uri}")
-    private String redirectUri;
-
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
+    @Value("${spring.security.oauth2.client.registration.google.client-id}")
+    private String clientId;
+    @Value("${spring.security.oauth2.client.registration.google.redirect-uri}")
+    private String redirectUri;
 
     @Override
     public AuthenticationResponse login(UserLoginRequest userLoginRequest) {
@@ -40,19 +38,19 @@ public class AuthenticationService implements IAuthenticationService {
             throw new RuntimeException("User not found");
         } catch (BadCredentialsException e) {
             throw new RuntimeException("Invalid username or password");
-        } catch (RuntimeException e){
+        } catch (RuntimeException e) {
             throw new RuntimeException(e.getMessage());
         }
     }
 
     @Override
     public String generateAuthUrl(String loginType) {
-        String url="";
+        String url = "";
         if (loginType.equals("google")) {
             url = "https://accounts.google.com/o/oauth2/auth?"
-                + "client_id=" + clientId
-                + "&redirect_uri=" + redirectUri
-                + "&response_type=code&scope=email%20profile";
+                    + "client_id=" + clientId
+                    + "&redirect_uri=" + redirectUri
+                    + "&response_type=code&scope=email%20profile";
         }
         return url;
     }

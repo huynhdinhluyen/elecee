@@ -16,7 +16,10 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 @Component
 @Slf4j
@@ -63,7 +66,7 @@ public class JwtUtils {
     }
 
     public String generateTokenFromUsername(String username) {
-        Map<String,Object> claims = new HashMap<>();
+        Map<String, Object> claims = new HashMap<>();
         User user = userRepository.findByUsername(username).get();
         claims.put("role", user.getRole());
         claims.put("fullName", user.getFullname());
@@ -83,7 +86,7 @@ public class JwtUtils {
         return null;
     }
 
-    public String generateVerificationToken(String email){
+    public String generateVerificationToken(String email) {
         return Jwts.builder()
                 .subject(email)
                 .issuer("elecee")
@@ -94,7 +97,7 @@ public class JwtUtils {
                 .compact();
     }
 
-    public Date getExpDateFromToken(String token){
+    public Date getExpDateFromToken(String token) {
         try {
             return Jwts
                     .parser()
@@ -124,7 +127,7 @@ public class JwtUtils {
         return null;
     }
 
-    public String generateJwtToken(UserDetailsImpl userPrincipal){
+    public String generateJwtToken(UserDetailsImpl userPrincipal) {
         return generateTokenFromUsername(userPrincipal.getUsername());
     }
 }
