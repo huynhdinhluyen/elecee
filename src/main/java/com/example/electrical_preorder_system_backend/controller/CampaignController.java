@@ -1,0 +1,59 @@
+package com.example.electrical_preorder_system_backend.controller;
+
+import com.example.electrical_preorder_system_backend.dto.request.CreateCampaignRequest;
+import com.example.electrical_preorder_system_backend.dto.request.UpdateCampaignRequest;
+import com.example.electrical_preorder_system_backend.dto.response.ApiResponse;
+import com.example.electrical_preorder_system_backend.dto.response.CampaignDTO;
+import com.example.electrical_preorder_system_backend.service.campaign.ICampaignService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("${api.prefix}/campaigns")
+public class CampaignController {
+
+    private final ICampaignService campaignService;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse> getCampaigns(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<CampaignDTO> campaignPage = campaignService.getCampaigns(pageable);
+        return ResponseEntity.ok(new ApiResponse("Campaigns retrieved successfully", campaignPage));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse> getCampaignById(@PathVariable UUID id) {
+        CampaignDTO campaignDTO = campaignService.getCampaignById(id);
+        return ResponseEntity.ok(new ApiResponse("Campaign retrieved successfully", campaignDTO));
+    }
+
+    @PostMapping
+    public ResponseEntity<ApiResponse> createCampaign(@RequestBody @Valid CreateCampaignRequest request) {
+        CampaignDTO campaignDTO = campaignService.createCampaign(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse("Campaign created successfully", campaignDTO));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse> updateCampaign(@PathVariable UUID id,
+                                                      @RequestBody @Valid UpdateCampaignRequest request) {
+        CampaignDTO campaignDTO = campaignService.updateCampaign(id, request);
+        return ResponseEntity.ok(new ApiResponse("Campaign updated successfully", campaignDTO));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse> deleteCampaign(@PathVariable UUID id) {
+        campaignService.deleteCampaign(id);
+        return ResponseEntity.ok(new ApiResponse("Campaign deleted successfully", id));
+    }
+}
