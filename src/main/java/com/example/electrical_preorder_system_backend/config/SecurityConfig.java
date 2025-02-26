@@ -2,8 +2,8 @@ package com.example.electrical_preorder_system_backend.config;
 
 import com.example.electrical_preorder_system_backend.config.jwt.AuthEntryPointJwt;
 import com.example.electrical_preorder_system_backend.config.jwt.JwtAuthenticationFilter;
-import com.example.electrical_preorder_system_backend.entity.ApiPermission;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -24,16 +24,19 @@ import org.springframework.web.cors.CorsConfiguration;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity()
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    @Value("${api.prefix}")
+    private String apiPrefix;
+
     private final UserDetailsService userDetailsService;
     private final AuthEntryPointJwt unauthorizedHandler;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     private static final List<Map.Entry<String, HttpMethod>> SECURED_URLS = List.of(
             Map.entry("/user", HttpMethod.POST),
@@ -41,13 +44,10 @@ public class SecurityConfig {
             Map.entry("/products", HttpMethod.POST),
             Map.entry("/products", HttpMethod.PUT),
             Map.entry("/products/delete/*", HttpMethod.DELETE),
-            Map.entry("/auth/login", HttpMethod.POST),
             Map.entry("/categories", HttpMethod.POST),
             Map.entry("/categories", HttpMethod.PUT),
             Map.entry("/categories", HttpMethod.DELETE)
     );
-
-
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter(){
@@ -79,7 +79,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> {
                     SECURED_URLS.forEach(entry ->
-                            auth.requestMatchers(entry.getValue(), entry.getKey()).authenticated()
+                            auth.requestMatchers(entry.getValue(), apiPrefix.concat(entry.getKey())).authenticated()
                     );
                     auth.anyRequest().permitAll();
                 });

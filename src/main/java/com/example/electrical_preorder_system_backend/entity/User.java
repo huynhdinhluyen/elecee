@@ -48,7 +48,6 @@ public class User {
     private String googleAccountId;
 
     @Column(nullable = true, unique = true)
-    @Size(min = 10, max = 15)
     private String phoneNumber;
 
     @Column(nullable = true)
@@ -63,7 +62,7 @@ public class User {
     private UserRole role;
 
     @Column(nullable = false)
-    private boolean isVerified = false;
+    private boolean isVerified;
 
     @Column(length = 512)
     private String token;

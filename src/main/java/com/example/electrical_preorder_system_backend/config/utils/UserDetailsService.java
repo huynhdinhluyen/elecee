@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserDetailsService implements org.springframework.security.core.userdetails.UserDetailsService {
 
     private final UserRepository userRepository;
+    @Override
     @Transactional
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsername(username)
@@ -24,13 +25,5 @@ public class UserDetailsService implements org.springframework.security.core.use
         return UserDetailsImpl.build(user);
     }
 
-    @Transactional
-    public UserDetails loadUserByEmail(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
-        if (user.getStatus().equals(UserStatus.INACTIVE)){
-            throw new RuntimeException("Account is not active");
-        }
-        return UserDetailsImpl.build(user);
-    }
+
 }

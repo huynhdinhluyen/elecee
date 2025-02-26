@@ -35,6 +35,7 @@ public class CategoryController {
 
     @PostMapping
     @SecurityRequirement(name = "Bearer Authentication")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse> addCategory(@RequestBody Category name) {
         try {
             Category newCategory = categoryService.addCategory(name);
@@ -56,6 +57,7 @@ public class CategoryController {
 
     @DeleteMapping("/{id}")
     @SecurityRequirement(name = "Bearer Authentication")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse> deleteCategoryById(@PathVariable UUID id) {
         try {
             categoryService.deleteCategoryById(id);

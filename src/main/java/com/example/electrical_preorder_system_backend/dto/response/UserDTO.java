@@ -12,6 +12,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Setter
 @Getter
+@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserDTO {
@@ -24,9 +25,6 @@ public class UserDTO {
      UserStatus status;
      UserRole role;
      boolean isVerified = false;
-//    private String token;
-//    private LocalDateTime tokenExpires;
-//    private List<Order> orders = new ArrayList<>();
      LocalDateTime createdAt;
      LocalDateTime updatedAt;
 }
