@@ -9,32 +9,27 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class JwtUtils {
+    private final UserRepository userRepository;
     @Value("${JWT_SECRET}")
     private String jwtSecret;
-
     @Value("${JWT_EXPIRATION}")
     private int jwtExpirationMs;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    //If login with Google, the subject will be the email
-    //If login with username and password, the subject will be the username
-    public static String getSubject(User user) {
-        return user.getUsername();
-    }
 
     private SecretKey getSecretKey() {
         byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
@@ -62,14 +57,15 @@ public class JwtUtils {
         return false;
     }
 
-    public String generateToken(User user, String provider) {
+    public String generateTokenFromUsername(String username) {
         Map<String, Object> claims = new HashMap<>();
+        User user = userRepository.findByUsername(username).get();
+        claims.put("id", user.getId());
         claims.put("role", user.getRole());
         claims.put("fullName", user.getFullname());
-        claims.put("provider", provider);
         try {
             return Jwts.builder()
-                    .subject(getSubject(user))
+                    .subject(username)
                     .issuer("elecee")
                     .claims(claims)
                     .signWith(getSecretKey(), Jwts.SIG.HS256)
@@ -81,15 +77,6 @@ public class JwtUtils {
             log.error("Error generating token: {}", e.getMessage());
         }
         return null;
-    }
-
-    public String generateToken(UserDetailsImpl userDetailsImpl, String provider) {
-        Optional<User> userOptional = userRepository.findByUsername(userDetailsImpl.getUsername());
-        if (userOptional.isEmpty()) {
-            log.error("User not fount: {}", userDetailsImpl.getUsername());
-            throw new RuntimeException("User not found");
-        }
-        return generateToken(userOptional.get(), provider);
     }
 
     public String generateVerificationToken(String email) {
@@ -133,4 +120,7 @@ public class JwtUtils {
         return null;
     }
 
+    public String generateJwtToken(UserDetailsImpl userPrincipal) {
+        return generateTokenFromUsername(userPrincipal.getUsername());
+    }
 }
