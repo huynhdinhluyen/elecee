@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -196,27 +197,36 @@ public class ProductService implements IProductService {
     }
 
     private void updateImageProducts(Product product, UpdateProductRequest request, List<MultipartFile> files) {
+        Set<String> oldImageUrls = request.getOldImageProducts().stream()
+                .map(dto -> dto.getImageUrl().trim())
+                .collect(Collectors.toSet());
+
+        if (product.getImageProducts() != null) {
+            product.getImageProducts().forEach(img -> {
+                if (!oldImageUrls.contains(img.getImageUrl())) {
+                    img.setDeleted(true);
+                }
+            });
+        }
+
         if (files != null && !files.isEmpty()) {
-            if (product.getImageProducts() != null) {
-                product.getImageProducts().forEach(img -> img.setDeleted(true));
-            }
-            // Asynchronously upload each new image and wait for the URLs
             List<CompletableFuture<String>> futures = files.stream()
                     .map(cloudinaryService::uploadFileAsync)
                     .toList();
-            List<String> imageUrls = futures.stream()
+            List<String> newImageUrls = futures.stream()
                     .map(CompletableFuture::join)
                     .toList();
-            // Map each URL to a new ImageProduct entity
-            List<ImageProduct> newImages = imageUrls.stream().map(url -> {
+
+            List<ImageProduct> newImages = newImageUrls.stream().map(url -> {
                 ImageProduct ip = new ImageProduct();
                 ip.setAltText(request.getName());
                 ip.setImageUrl(url);
                 ip.setDeleted(false);
                 ip.setProduct(product);
                 return ip;
-            }).collect(Collectors.toList());
-            product.setImageProducts(newImages);
+            }).toList();
+
+            product.getImageProducts().addAll(newImages);
         }
     }
 
