@@ -36,6 +36,8 @@ public interface IProductService {
 
     Page<Product> searchProducts(String query, String category, Pageable pageable);
 
+    Product getProductBySlug(String slug);
+
     Product getProductByProductCode(String productCode);
 
     void deleteProducts(List<UUID> ids);
