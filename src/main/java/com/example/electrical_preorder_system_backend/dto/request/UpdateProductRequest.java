@@ -23,5 +23,5 @@ public class UpdateProductRequest {
     @PositiveOrZero
     private Integer position;
     private CategoryDTO category;
-    List<ImageProductDTO> oldImageProducts = new ArrayList<>();
+    private List<ImageProductDTO> oldImageProducts = new ArrayList<>();
 }

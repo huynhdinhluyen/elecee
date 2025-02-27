@@ -38,7 +38,7 @@ public class AuthenticationService implements IAuthenticationService {
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
             User user = userRepository.findByUsername(userDetails.getUsername())
                     .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-            if(user.getRole().equals(UserRole.ROLE_STAFF) && !user.isVerified()) {
+            if (user.getRole().equals(UserRole.ROLE_STAFF) && !user.isVerified()) {
                 throw new RuntimeException("Login failed. Please verify your email first");
             }
             String token = jwtUtils.generateJwtToken(userDetails);

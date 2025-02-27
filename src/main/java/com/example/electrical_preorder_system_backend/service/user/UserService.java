@@ -219,7 +219,7 @@ public class UserService implements IUserService {
             }
             user.setPassword(passwordEncoder.encode(updatePasswordRequest.getNewPassword()));
             userRepository.save(user);
-        }else {
+        } else {
             throw new IllegalArgumentException("Invalid password");
         }
     }
@@ -263,7 +263,6 @@ public class UserService implements IUserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return (authenticatedUser.getRole().equals(UserRole.ROLE_CUSTOMER) || authenticatedUser.getRole().equals(UserRole.ROLE_STAFF)) && !authenticatedUser.getId().equals(id);
     }
-
 
 
 }
