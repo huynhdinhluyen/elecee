@@ -12,4 +12,3 @@ public interface GoogleUserClient {
     GoogleUserResponse getUserInfo(@RequestParam("alt") String alt,
                                    @RequestParam("access_token") String accessToken);
 }
-

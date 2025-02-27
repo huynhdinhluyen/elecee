@@ -40,11 +40,14 @@ public class SecurityConfig {
             Map.entry("/users/*", HttpMethod.PATCH),
             Map.entry("/users/*", HttpMethod.DELETE),
             Map.entry("/products", HttpMethod.POST),
-            Map.entry("/products", HttpMethod.PUT),
-            Map.entry("/products/delete/*", HttpMethod.DELETE),
+            Map.entry("/products/*", HttpMethod.PUT),
+            Map.entry("/products/*", HttpMethod.DELETE),
             Map.entry("/categories", HttpMethod.POST),
-            Map.entry("/categories", HttpMethod.PUT),
-            Map.entry("/categories", HttpMethod.DELETE)
+            Map.entry("/categories/*", HttpMethod.PUT),
+            Map.entry("/categories/*", HttpMethod.DELETE),
+            Map.entry("/campaigns", HttpMethod.POST),
+            Map.entry("/campaigns/*", HttpMethod.PUT),
+            Map.entry("/campaigns/*", HttpMethod.DELETE)
     );
     private final UserDetailsService userDetailsService;
     private final AuthEntryPointJwt unauthorizedHandler;
