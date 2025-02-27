@@ -8,8 +8,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UpdateUserRequest {
-    String fullname;
-    String phoneNumber;
-    String address;
+public class UpdatePasswordRequest {
+    String currentPassword;
+    String newPassword;
 }
