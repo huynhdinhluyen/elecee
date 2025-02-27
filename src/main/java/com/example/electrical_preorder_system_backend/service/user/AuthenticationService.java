@@ -4,6 +4,9 @@ import com.example.electrical_preorder_system_backend.config.jwt.JwtUtils;
 import com.example.electrical_preorder_system_backend.config.utils.UserDetailsImpl;
 import com.example.electrical_preorder_system_backend.dto.request.UserLoginRequest;
 import com.example.electrical_preorder_system_backend.dto.response.AuthenticationResponse;
+import com.example.electrical_preorder_system_backend.entity.User;
+import com.example.electrical_preorder_system_backend.enums.UserRole;
+import com.example.electrical_preorder_system_backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,6 +23,7 @@ public class AuthenticationService implements IAuthenticationService {
 
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
+    private final UserRepository userRepository;
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String clientId;
     @Value("${spring.security.oauth2.client.registration.google.redirect-uri}")
@@ -32,6 +36,11 @@ public class AuthenticationService implements IAuthenticationService {
                     .authenticate(new UsernamePasswordAuthenticationToken(userLoginRequest.getUsername(), userLoginRequest.getPassword()));
             SecurityContextHolder.getContext().setAuthentication(authentication);
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            User user = userRepository.findByUsername(userDetails.getUsername())
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+            if (user.getRole().equals(UserRole.ROLE_STAFF) && !user.isVerified()) {
+                throw new RuntimeException("Login failed. Please verify your email first");
+            }
             String token = jwtUtils.generateJwtToken(userDetails);
             return new AuthenticationResponse(token);
         } catch (UsernameNotFoundException e) {

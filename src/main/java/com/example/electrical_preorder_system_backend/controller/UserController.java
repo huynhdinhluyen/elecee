@@ -83,7 +83,7 @@ public class UserController {
     public ResponseEntity<ApiResponse> updatePassword(
             @NonNull @PathVariable UUID id,
             @NonNull @RequestBody UpdatePasswordRequest updatePasswordRequest
-    ){
+    ) {
         userService.updatePassword(id, updatePasswordRequest);
         return ResponseEntity.noContent().build();
     }

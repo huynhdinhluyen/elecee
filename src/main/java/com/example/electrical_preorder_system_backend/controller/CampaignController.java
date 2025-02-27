@@ -4,6 +4,7 @@ import com.example.electrical_preorder_system_backend.dto.request.CreateCampaign
 import com.example.electrical_preorder_system_backend.dto.request.UpdateCampaignRequest;
 import com.example.electrical_preorder_system_backend.dto.response.ApiResponse;
 import com.example.electrical_preorder_system_backend.dto.response.CampaignDTO;
+import com.example.electrical_preorder_system_backend.entity.Campaign;
 import com.example.electrical_preorder_system_backend.service.campaign.ICampaignService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
@@ -30,22 +31,22 @@ public class CampaignController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<CampaignDTO> campaignPage = campaignService.getCampaigns(pageable);
+        Page<CampaignDTO> campaignPage = campaignService.getConvertedCampaigns(pageable);
         return ResponseEntity.ok(new ApiResponse("Campaigns retrieved successfully", campaignPage));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse> getCampaignById(@PathVariable UUID id) {
-        CampaignDTO campaignDTO = campaignService.getCampaignById(id);
-        return ResponseEntity.ok(new ApiResponse("Campaign retrieved successfully", campaignDTO));
+        Campaign campaign = campaignService.getCampaignById(id);
+        return ResponseEntity.ok(new ApiResponse("Campaign retrieved successfully", campaignService.convertToDto(campaign)));
     }
 
     @PostMapping
     @SecurityRequirement(name = "Bearer Authentication")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse> createCampaign(@RequestBody @Valid CreateCampaignRequest request) {
-        CampaignDTO campaignDTO = campaignService.createCampaign(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse("Campaign created successfully", campaignDTO));
+        Campaign campaign = campaignService.createCampaign(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse("Campaign created successfully", campaignService.convertToDto(campaign)));
     }
 
     @PutMapping("/{id}")
@@ -53,8 +54,8 @@ public class CampaignController {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse> updateCampaign(@PathVariable UUID id,
                                                       @RequestBody @Valid UpdateCampaignRequest request) {
-        CampaignDTO campaignDTO = campaignService.updateCampaign(id, request);
-        return ResponseEntity.ok(new ApiResponse("Campaign updated successfully", campaignDTO));
+        Campaign campaign = campaignService.updateCampaign(id, request);
+        return ResponseEntity.ok(new ApiResponse("Campaign updated successfully", campaignService.convertToDto(campaign)));
     }
 
     @DeleteMapping("/{id}")

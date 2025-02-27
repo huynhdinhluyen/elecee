@@ -31,21 +31,20 @@ public class EmailService implements IEmailService {
     private UserRepository userRepository;
 
     @Override
-    public void sendEmail(String to, String subject, String body) throws MessagingException {
-        MimeMessage message = emailSender.createMimeMessage();
+    public void sendEmail(String to, String subject, String body) {
+        try {
+            MimeMessage message = emailSender.createMimeMessage();
 
-        message.setFrom("hello@elecee.vercel.app");
-        message.setRecipients(Message.RecipientType.TO, to);
-        message.setSubject(subject);
-        message.setText(body, "utf-8", "html");
+            message.setFrom("hello@elecee.vercel.app");
+            message.setRecipients(Message.RecipientType.TO, to);
+            message.setSubject(subject);
+            message.setText(body, "utf-8", "html");
 
-        emailSender.send(message);
-//        SimpleMailMessage message = new SimpleMailMessage();
-//        message.setFrom("hello@elecee.vercel.app");
-//        message.setTo(to);
-//        message.setSubject(subject);
-//        message.setText(body);
-//        emailSender.send(message);
+            emailSender.send(message);
+        } catch (MessagingException e) {
+            log.error("Error sending email: {}", e.getMessage());
+            throw new RuntimeException("Error sending email");
+        }
 
     }
 

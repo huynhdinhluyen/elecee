@@ -35,7 +35,7 @@ public class SecurityConfig {
             Map.entry("/users", HttpMethod.POST),
             Map.entry("/users", HttpMethod.GET),
             Map.entry("/users/*", HttpMethod.GET),
-            Map.entry("/users/*", HttpMethod.POST),
+            Map.entry("/users/sign-up", HttpMethod.POST),
             Map.entry("/users/*", HttpMethod.PUT),
             Map.entry("/users/*", HttpMethod.PATCH),
             Map.entry("/users/*", HttpMethod.DELETE),

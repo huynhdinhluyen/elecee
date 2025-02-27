@@ -14,6 +14,7 @@ import com.example.electrical_preorder_system_backend.enums.UserRole;
 import com.example.electrical_preorder_system_backend.enums.UserStatus;
 import com.example.electrical_preorder_system_backend.mapper.UserMapper;
 import com.example.electrical_preorder_system_backend.repository.UserRepository;
+import com.example.electrical_preorder_system_backend.service.email.EmailService;
 import com.example.electrical_preorder_system_backend.util.Validator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +42,8 @@ public class UserService implements IUserService {
     private final PasswordEncoder passwordEncoder;
     private final GoogleIdentityClient googleIdentityClient;
     private final GoogleUserClient googleUserClient;
+    private final EmailService emailService;
+
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String clientId;
     @Value("${spring.security.oauth2.client.registration.google.client-secret}")
@@ -75,6 +78,10 @@ public class UserService implements IUserService {
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();
+            // Send email verification
+            emailService.sendEmail(user.getEmail(),
+                    "Email verification",
+                    emailService.bodyRegister(user.getEmail(), user.getFullname()));
             userRepository.save(user);
             String jwtToken = jwtUtils.generateTokenFromUsername(user.getUsername());
             user.setToken(jwtToken);
@@ -136,13 +143,11 @@ public class UserService implements IUserService {
     @Override
     public void verifyEmail(String token) {
         Date expDate = jwtUtils.getExpDateFromToken(token);
-        String username = jwtUtils.getSubjectFromToken(token);
+        String email = jwtUtils.getSubjectFromToken(token);
         // Check if the token is not expired
-
         if (!expDate.before(new Date())) {
-            User user = userRepository.findByUsername(username)
+            User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("User not found"));
-
             user.setVerified(true);
             userRepository.save(user);
         } else {
@@ -214,7 +219,7 @@ public class UserService implements IUserService {
             }
             user.setPassword(passwordEncoder.encode(updatePasswordRequest.getNewPassword()));
             userRepository.save(user);
-        }else {
+        } else {
             throw new IllegalArgumentException("Invalid password");
         }
     }
@@ -258,7 +263,6 @@ public class UserService implements IUserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return (authenticatedUser.getRole().equals(UserRole.ROLE_CUSTOMER) || authenticatedUser.getRole().equals(UserRole.ROLE_STAFF)) && !authenticatedUser.getId().equals(id);
     }
-
 
 
 }
