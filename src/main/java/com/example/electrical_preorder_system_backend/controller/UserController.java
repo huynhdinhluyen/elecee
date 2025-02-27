@@ -52,7 +52,7 @@ public class UserController {
     @SecurityRequirement(name = "Bearer Authentication")
     public ResponseEntity<UserDTO> getById(
             @NonNull @PathVariable UUID id
-    ){
+    ) {
         return ResponseEntity.ok(userService.getById(id));
     }
 
@@ -62,7 +62,7 @@ public class UserController {
     public ResponseEntity<ApiResponse> getUsers(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
-    ){
+    ) {
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(new ApiResponse("Users retrieved successfully", userService.getUsers(pageable)));
     }
@@ -72,7 +72,7 @@ public class UserController {
     public ResponseEntity<ApiResponse> update(
             @NonNull @PathVariable UUID id,
             @NonNull @RequestBody UpdateUserRequest updateUserRequest
-    ){
+    ) {
         userService.update(id, updateUserRequest);
         return ResponseEntity.noContent().build();
     }
@@ -82,7 +82,7 @@ public class UserController {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse> delete(
             @NonNull @PathVariable UUID id
-    ){
+    ) {
         userService.delete(id);
         return ResponseEntity.noContent().build();
     }
