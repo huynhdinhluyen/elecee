@@ -7,6 +7,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import static org.springframework.data.web.config.EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO;
 
@@ -16,6 +17,7 @@ import static org.springframework.data.web.config.EnableSpringDataWebSupport.Pag
 @EnableFeignClients
 @EnableSpringDataWebSupport(pageSerializationMode = VIA_DTO)
 @EnableAsync
+@EnableScheduling
 public class ElectricalPreorderSystemBackendApplication {
 
     public static void main(String[] args) {
