@@ -9,10 +9,6 @@ import lombok.experimental.FieldDefaults;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserLoginRequest {
-
     String username;
     String password;
-    String googleAccountId;
-    String fullName;
-
 }
