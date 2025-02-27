@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
-import java.rmi.ServerError;
 import java.time.LocalDate;
 
 @Service
@@ -32,7 +31,7 @@ public class EmailService implements IEmailService {
     private UserRepository userRepository;
 
     @Override
-    public void sendEmail(String to, String subject, String body){
+    public void sendEmail(String to, String subject, String body) {
         try {
             MimeMessage message = emailSender.createMimeMessage();
 
@@ -42,7 +41,7 @@ public class EmailService implements IEmailService {
             message.setText(body, "utf-8", "html");
 
             emailSender.send(message);
-        }catch (MessagingException e){
+        } catch (MessagingException e) {
             log.error("Error sending email: {}", e.getMessage());
             throw new RuntimeException("Error sending email");
         }
