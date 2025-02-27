@@ -45,9 +45,9 @@ public class ProductController {
         return ResponseEntity.ok(new ApiResponse("Products retrieved successfully", productPage));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse> getProductById(@PathVariable UUID id) {
-        Product product = productService.getProductById(id);
+    @GetMapping("/{slug}")
+    public ResponseEntity<ApiResponse> getProductBySlug(@PathVariable String slug) {
+        Product product = productService.getProductBySlug(slug);
         return ResponseEntity.ok(new ApiResponse("Product retrieved successfully", productService.convertToDto(product)));
     }
 

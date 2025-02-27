@@ -47,7 +47,7 @@ public class User {
     @Column(nullable = true, unique = true)
     private String googleAccountId;
 
-    @Column(nullable = true, unique = true)
+    @Column(nullable = true)
     private String phoneNumber;
 
     @Column(nullable = true)
@@ -68,6 +68,9 @@ public class User {
     private String token;
 
     private LocalDateTime tokenExpires;
+
+    @Column(nullable = true)
+    private String address;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<Order> orders = new ArrayList<>();

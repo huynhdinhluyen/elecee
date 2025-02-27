@@ -120,6 +120,15 @@ public class ProductService implements IProductService {
     }
 
     @Override
+    public Product getProductBySlug(String slug) {
+        Product product = productRepository.findBySlug(slug.trim());
+        if (product == null || product.isDeleted()) {
+            throw new ResourceNotFoundException("Product not found with slug: " + slug);
+        }
+        return product;
+    }
+
+    @Override
     public Product getProductByProductCode(String productCode) {
         Product product = productRepository.findByProductCode(productCode.trim());
         if (product == null || product.isDeleted()) {
@@ -188,7 +197,6 @@ public class ProductService implements IProductService {
 
     private void updateImageProducts(Product product, UpdateProductRequest request, List<MultipartFile> files) {
         if (files != null && !files.isEmpty()) {
-            // Soft-delete all existing images
             if (product.getImageProducts() != null) {
                 product.getImageProducts().forEach(img -> img.setDeleted(true));
             }
@@ -202,7 +210,6 @@ public class ProductService implements IProductService {
             // Map each URL to a new ImageProduct entity
             List<ImageProduct> newImages = imageUrls.stream().map(url -> {
                 ImageProduct ip = new ImageProduct();
-                // Here we use the product name as alt text; adjust as needed.
                 ip.setAltText(request.getName());
                 ip.setImageUrl(url);
                 ip.setDeleted(false);
