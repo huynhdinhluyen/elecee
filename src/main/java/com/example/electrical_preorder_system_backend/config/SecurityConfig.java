@@ -3,6 +3,7 @@ package com.example.electrical_preorder_system_backend.config;
 import com.example.electrical_preorder_system_backend.config.jwt.AuthEntryPointJwt;
 import com.example.electrical_preorder_system_backend.config.jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -26,7 +27,7 @@ import java.util.Map;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity()
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -34,15 +35,20 @@ public class SecurityConfig {
             Map.entry("/user", HttpMethod.POST),
             Map.entry("/user/sign-up", HttpMethod.POST),
             Map.entry("/products", HttpMethod.POST),
-            Map.entry("/products", HttpMethod.PUT),
-            Map.entry("/products/delete/*", HttpMethod.DELETE),
-            Map.entry("/auth/login", HttpMethod.POST),
+            Map.entry("/products/*", HttpMethod.PUT),
+            Map.entry("/products/*", HttpMethod.DELETE),
             Map.entry("/categories", HttpMethod.POST),
-            Map.entry("/categories", HttpMethod.PUT),
-            Map.entry("/categories", HttpMethod.DELETE)
+            Map.entry("/categories/*", HttpMethod.PUT),
+            Map.entry("/categories/*", HttpMethod.DELETE),
+            Map.entry("/campaigns", HttpMethod.POST),
+            Map.entry("/campaigns/*", HttpMethod.PUT),
+            Map.entry("/campaigns/*", HttpMethod.DELETE)
     );
     private final UserDetailsService userDetailsService;
     private final AuthEntryPointJwt unauthorizedHandler;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
+    @Value("${api.prefix}")
+    private String apiPrefix;
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
@@ -74,7 +80,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> {
                     SECURED_URLS.forEach(entry ->
-                            auth.requestMatchers(entry.getValue(), entry.getKey()).authenticated()
+                            auth.requestMatchers(entry.getValue(), apiPrefix.concat(entry.getKey())).authenticated()
                     );
                     auth.anyRequest().permitAll();
                 });
