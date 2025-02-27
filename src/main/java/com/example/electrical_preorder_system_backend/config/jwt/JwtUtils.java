@@ -11,7 +11,6 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -26,13 +25,11 @@ import java.util.UUID;
 @Slf4j
 @RequiredArgsConstructor
 public class JwtUtils {
+    private final UserRepository userRepository;
     @Value("${JWT_SECRET}")
     private String jwtSecret;
-
     @Value("${JWT_EXPIRATION}")
     private int jwtExpirationMs;
-
-    private final UserRepository userRepository;
 
     private SecretKey getSecretKey() {
         byte[] keyBytes = Decoders.BASE64.decode(jwtSecret);
