@@ -4,6 +4,7 @@ import com.example.electrical_preorder_system_backend.config.client.GoogleIdenti
 import com.example.electrical_preorder_system_backend.config.client.GoogleUserClient;
 import com.example.electrical_preorder_system_backend.config.jwt.JwtUtils;
 import com.example.electrical_preorder_system_backend.dto.request.ExchangeTokenRequest;
+import com.example.electrical_preorder_system_backend.dto.request.UpdatePasswordRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UpdateUserRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UserSignUpRequest;
 import com.example.electrical_preorder_system_backend.dto.response.AuthenticationResponse;
@@ -19,6 +20,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionSystemException;
@@ -149,6 +152,9 @@ public class UserService implements IUserService {
 
     @Override
     public void update(UUID id, UpdateUserRequest updateUserRequest) {
+        if (isValidToUpdate(id)) {
+            throw new AuthorizationDeniedException("Access denied");
+        }
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         if (user.getStatus().equals(UserStatus.INACTIVE)) {
@@ -158,10 +164,7 @@ public class UserService implements IUserService {
             throw new IllegalArgumentException("User is banned, cannot update");
         }
         updateBasicInfo(user, updateUserRequest);
-        if (updateUserRequest.getCurrentPassword() != null && !updateUserRequest.getCurrentPassword().isEmpty()
-                && updateUserRequest.getNewPassword() != null && !updateUserRequest.getNewPassword().isEmpty()) {
-            updatePassword(user, updateUserRequest);
-        }
+        userRepository.save(user);
     }
 
     private void updateBasicInfo(User user, UpdateUserRequest updateUserRequest) {
@@ -194,15 +197,26 @@ public class UserService implements IUserService {
         }
     }
 
-    private void updatePassword(User user, UpdateUserRequest updateUserRequest) {
-        if (!passwordEncoder.matches(updateUserRequest.getCurrentPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("Invalid current password");
+    @Override
+    public void updatePassword(UUID id, UpdatePasswordRequest updatePasswordRequest) {
+        if (isValidToUpdate(id)) {
+            throw new AuthorizationDeniedException("Access denied");
         }
-        if (!Validator.isValidPassword(updateUserRequest.getNewPassword())) {
-            throw new IllegalArgumentException("Invalid new password");
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (updatePasswordRequest.getCurrentPassword() != null && !updatePasswordRequest.getCurrentPassword().isEmpty()
+                && updatePasswordRequest.getNewPassword() != null && !updatePasswordRequest.getNewPassword().isEmpty()) {
+            if (!passwordEncoder.matches(updatePasswordRequest.getCurrentPassword(), user.getPassword())) {
+                throw new IllegalArgumentException("Invalid current password");
+            }
+            if (!Validator.isValidPassword(updatePasswordRequest.getNewPassword())) {
+                throw new IllegalArgumentException("Invalid new password");
+            }
+            user.setPassword(passwordEncoder.encode(updatePasswordRequest.getNewPassword()));
+            userRepository.save(user);
+        }else {
+            throw new IllegalArgumentException("Invalid password");
         }
-        user.setPassword(passwordEncoder.encode(updateUserRequest.getNewPassword()));
-        userRepository.save(user);
     }
 
     public void delete(UUID id) {
@@ -213,6 +227,10 @@ public class UserService implements IUserService {
         }
         if (user.getStatus().equals(UserStatus.BANNED)) {
             throw new IllegalArgumentException("User is banned, cannot delete");
+        }
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        if (username.equals(user.getUsername())) {
+            throw new RuntimeException("Cannot delete yourself");
         }
         user.setStatus(UserStatus.INACTIVE);
         userRepository.save(user);
@@ -232,6 +250,15 @@ public class UserService implements IUserService {
     public Page<User> getUsers(Pageable pageable) {
         return userRepository.findAll(pageable);
     }
+
+    private boolean isValidToUpdate(UUID id) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        // Customer can only update their own password
+        User authenticatedUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return (authenticatedUser.getRole().equals(UserRole.ROLE_CUSTOMER) || authenticatedUser.getRole().equals(UserRole.ROLE_STAFF)) && !authenticatedUser.getId().equals(id);
+    }
+
 
 
 }
