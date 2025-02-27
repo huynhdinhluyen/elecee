@@ -1,6 +1,7 @@
 package com.example.electrical_preorder_system_backend.controller;
 
 import com.example.electrical_preorder_system_backend.dto.request.EmailVerificationRequest;
+import com.example.electrical_preorder_system_backend.dto.request.UpdatePasswordRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UpdateUserRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UserSignUpRequest;
 import com.example.electrical_preorder_system_backend.dto.response.ApiResponse;
@@ -74,6 +75,16 @@ public class UserController {
             @NonNull @RequestBody UpdateUserRequest updateUserRequest
     ){
         userService.update(id, updateUserRequest);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/password")
+    @SecurityRequirement(name = "Bearer Authentication")
+    public ResponseEntity<ApiResponse> updatePassword(
+            @NonNull @PathVariable UUID id,
+            @NonNull @RequestBody UpdatePasswordRequest updatePasswordRequest
+    ){
+        userService.updatePassword(id, updatePasswordRequest);
         return ResponseEntity.noContent().build();
     }
 

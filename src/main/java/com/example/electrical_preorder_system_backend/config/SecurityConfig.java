@@ -32,8 +32,13 @@ import java.util.Map;
 public class SecurityConfig {
 
     private static final List<Map.Entry<String, HttpMethod>> SECURED_URLS = List.of(
-            Map.entry("/user", HttpMethod.POST),
-            Map.entry("/user/sign-up", HttpMethod.POST),
+            Map.entry("/users", HttpMethod.POST),
+            Map.entry("/users", HttpMethod.GET),
+            Map.entry("/users/*", HttpMethod.GET),
+            Map.entry("/users/*", HttpMethod.POST),
+            Map.entry("/users/*", HttpMethod.PUT),
+            Map.entry("/users/*", HttpMethod.PATCH),
+            Map.entry("/users/*", HttpMethod.DELETE),
             Map.entry("/products", HttpMethod.POST),
             Map.entry("/products", HttpMethod.PUT),
             Map.entry("/products/delete/*", HttpMethod.DELETE),
