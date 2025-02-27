@@ -1,11 +1,13 @@
 package com.example.electrical_preorder_system_backend.entity;
 
+import com.example.electrical_preorder_system_backend.enums.CampaignStageStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -18,6 +20,7 @@ import java.util.UUID;
 @Table(name = "\"campaign_stage\"", indexes = {
         @Index(name = "idx_campaign_stage_dates", columnList = "campaign_id, startDate, endDate")
 })
+@DynamicUpdate
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
@@ -30,15 +33,22 @@ public class CampaignStage {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
+    @Column(name = "start_date", nullable = false)
     private LocalDateTime startDate;
 
-    @Column(nullable = false)
+    @Column(name = "end_date", nullable = false)
     private LocalDateTime endDate;
 
     @Column(nullable = false)
     @Min(0)
     private Integer quantitySold;
+
+    @Column(nullable = false)
+    @Min(0)
+    private Integer targetQuantity;
+
+    @Enumerated(EnumType.STRING)
+    private CampaignStageStatus status = CampaignStageStatus.UPCOMING;
 
     @Column(nullable = false)
     private boolean isDeleted = false;
@@ -48,10 +58,10 @@ public class CampaignStage {
     private Campaign campaign;
 
     @CreatedDate
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @LastModifiedDate
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 }

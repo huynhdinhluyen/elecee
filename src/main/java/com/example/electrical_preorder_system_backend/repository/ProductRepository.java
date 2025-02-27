@@ -74,4 +74,6 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
     @Query(value = "SELECT COUNT(*) FROM product WHERE is_deleted = false", nativeQuery = true)
     Long countActiveProducts();
 
+    @Query(value = "SELECT * FROM product WHERE is_deleted = false AND slug = ?1", nativeQuery = true)
+    Product findBySlug(String slug);
 }

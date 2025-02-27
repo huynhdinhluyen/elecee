@@ -6,12 +6,14 @@ import com.example.electrical_preorder_system_backend.dto.response.ApiResponse;
 import com.example.electrical_preorder_system_backend.dto.response.ProductDTO;
 import com.example.electrical_preorder_system_backend.entity.Product;
 import com.example.electrical_preorder_system_backend.service.product.IProductService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -43,9 +45,9 @@ public class ProductController {
         return ResponseEntity.ok(new ApiResponse("Products retrieved successfully", productPage));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse> getProductById(@PathVariable UUID id) {
-        Product product = productService.getProductById(id);
+    @GetMapping("/{slug}")
+    public ResponseEntity<ApiResponse> getProductBySlug(@PathVariable String slug) {
+        Product product = productService.getProductBySlug(slug);
         return ResponseEntity.ok(new ApiResponse("Product retrieved successfully", productService.convertToDto(product)));
     }
 
@@ -67,6 +69,8 @@ public class ProductController {
     }
 
     @PostMapping(consumes = "multipart/form-data")
+    @SecurityRequirement(name = "Bearer Authentication")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse> createProduct(
             @RequestPart("product") @Valid CreateProductRequest productRequest,
             @RequestPart(value = "imageFiles", required = false) List<MultipartFile> imageFiles) {
@@ -75,21 +79,27 @@ public class ProductController {
     }
 
     @PatchMapping(value = "/{id}", consumes = "multipart/form-data")
+    @SecurityRequirement(name = "Bearer Authentication")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse> updateProduct(
             @PathVariable UUID id,
             @RequestPart("product") UpdateProductRequest request,
-            @RequestPart(value = "files", required = false) List<MultipartFile> imageFiles) {
+            @RequestPart(value = "imageFiles", required = false) List<MultipartFile> imageFiles) {
         Product updatedProduct = productService.updateProduct(request, id, imageFiles);
         return ResponseEntity.ok(new ApiResponse("Product updated successfully", productService.convertToDto(updatedProduct)));
     }
 
     @DeleteMapping("/{id}")
+    @SecurityRequirement(name = "Bearer Authentication")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse> deleteProduct(@PathVariable UUID id) {
         productService.deleteProductById(id);
         return ResponseEntity.ok(new ApiResponse("Product deleted successfully", id));
     }
 
     @DeleteMapping
+    @SecurityRequirement(name = "Bearer Authentication")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse> deleteProducts(@RequestParam List<UUID> ids) {
         productService.deleteProducts(ids);
         return ResponseEntity.ok(new ApiResponse("Products deleted successfully", ids));

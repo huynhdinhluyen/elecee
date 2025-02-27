@@ -1,6 +1,6 @@
 package com.example.electrical_preorder_system_backend.entity;
 
-import com.example.electrical_preorder_system_backend.enums.StageStatus;
+import com.example.electrical_preorder_system_backend.enums.CampaignStageStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -29,11 +29,11 @@ public class StageHistory {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private StageStatus preStatus;
+    private CampaignStageStatus preStatus;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private StageStatus posStatus;
+    private CampaignStageStatus posStatus;
 
     @Column(nullable = false)
     private LocalDateTime transitionTime;
@@ -43,10 +43,10 @@ public class StageHistory {
     private CampaignStage campaignStage;
 
     @CreatedDate
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @LastModifiedDate
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 }
