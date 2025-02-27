@@ -39,24 +39,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
         try {
-            //Parse jwt token
             String jwt = parseJwt(request);
-            //If jwt token is not null and valid
             if (jwt != null && jwtUtils.validateToken(jwt)) {
-                UserDetails userDetails = null;
-                String subject = jwtUtils.getSubjectFromToken(jwt);
-                UsernamePasswordAuthenticationToken authenticationToken = null;
-                if ("google".equals(subject)) {
-                    // If access with Google account
-                    String email = jwtUtils.getSubjectFromToken(jwt);
-                    userDetails = userDetailsService.loadUserByEmail(email);
-                } else {
-                    // If access with normal account
-                    String username = jwtUtils.getSubjectFromToken(jwt);
-                    userDetails = userDetailsService.loadUserByUsername(username);
-                }
-                authenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                String username = jwtUtils.getSubjectFromToken(jwt);
+
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
                 SecurityContextHolder.getContext().setAuthentication(authenticationToken);
             }
         } catch (Exception e) {
