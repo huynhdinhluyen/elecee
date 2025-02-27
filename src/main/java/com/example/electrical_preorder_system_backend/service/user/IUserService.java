@@ -1,5 +1,6 @@
 package com.example.electrical_preorder_system_backend.service.user;
 
+import com.example.electrical_preorder_system_backend.dto.request.UpdatePasswordRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UpdateUserRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UserSignUpRequest;
 import com.example.electrical_preorder_system_backend.dto.response.AuthenticationResponse;
@@ -26,4 +27,6 @@ public interface IUserService {
     UserDTO getById(UUID id);
 
     Page<User> getUsers(Pageable pageable);
+
+    void updatePassword(UUID id, UpdatePasswordRequest updatePasswordRequest);
 }
