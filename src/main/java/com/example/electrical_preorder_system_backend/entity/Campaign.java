@@ -31,7 +31,7 @@ public class Campaign {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String name;
 
     @Column(name = "start_date", nullable = false)
@@ -53,7 +53,7 @@ public class Campaign {
     private BigDecimal totalAmount;
 
     @Enumerated(EnumType.STRING)
-    private CampaignStatus status = CampaignStatus.DRAFT;
+    private CampaignStatus status;
 
     @Column(nullable = false)
     private boolean isDeleted = false;

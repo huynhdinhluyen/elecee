@@ -33,7 +33,7 @@ public class StageHistory {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private CampaignStageStatus posStatus;
+    private CampaignStageStatus curStatus;
 
     @Column(nullable = false)
     private LocalDateTime transitionTime;
