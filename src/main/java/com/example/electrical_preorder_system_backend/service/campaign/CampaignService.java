@@ -8,6 +8,7 @@ import com.example.electrical_preorder_system_backend.entity.Campaign;
 import com.example.electrical_preorder_system_backend.entity.Product;
 import com.example.electrical_preorder_system_backend.enums.CampaignStatus;
 import com.example.electrical_preorder_system_backend.exception.AlreadyExistsException;
+import com.example.electrical_preorder_system_backend.exception.CampaignStatusException;
 import com.example.electrical_preorder_system_backend.exception.ResourceNotFoundException;
 import com.example.electrical_preorder_system_backend.repository.CampaignRepository;
 import com.example.electrical_preorder_system_backend.repository.ProductRepository;
@@ -38,11 +39,11 @@ public class CampaignService implements ICampaignService {
     @Transactional
     @CacheEvict(value = "campaigns", allEntries = true)
     public Campaign createCampaign(CreateCampaignRequest request) {
-        String trimmedName = request.getName().trim();
-        if (campaignRepository.existsByName(trimmedName)) {
-            throw new AlreadyExistsException("Campaign with name '" + trimmedName + "' already exists.");
+        String campaignName = request.getName().trim();
+        Campaign oldCampaign = campaignRepository.findByName(campaignName);
+        if (!oldCampaign.isDeleted()) {
+            throw new AlreadyExistsException("Campaign with name '" + campaignName + "' already exists.");
         }
-
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startDate = request.getStartDate();
         LocalDateTime endDate = request.getEndDate();
@@ -53,23 +54,23 @@ public class CampaignService implements ICampaignService {
             throw new IllegalArgumentException("Campaign start date must be before the end date.");
         }
 
-        Campaign campaign = new Campaign();
-        campaign.setName(trimmedName);
-        campaign.setStartDate(startDate);
-        campaign.setEndDate(endDate);
-        campaign.setMinQuantity(request.getMinQuantity());
-        campaign.setMaxQuantity(request.getMaxQuantity());
-        campaign.setTotalAmount(request.getTotalAmount());
-        campaign.setStatus(determineCampaignStatus(startDate, endDate));
+        Campaign newCampaign = new Campaign();
+        newCampaign.setName(campaignName);
+        newCampaign.setStartDate(startDate);
+        newCampaign.setEndDate(endDate);
+        newCampaign.setMinQuantity(request.getMinQuantity());
+        newCampaign.setMaxQuantity(request.getMaxQuantity());
+        newCampaign.setTotalAmount(request.getTotalAmount());
+        newCampaign.setStatus(determineCampaignStatus(startDate, endDate));
 
         UUID productId = UUID.fromString(request.getProductId().trim());
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + request.getProductId()));
-        campaign.setProduct(product);
+        newCampaign.setProduct(product);
 
-        campaign = campaignRepository.save(campaign);
-        log.info("Campaign created with id {}", campaign.getId());
-        return campaign;
+        newCampaign = campaignRepository.save(newCampaign);
+        log.info("Campaign created with id {}", newCampaign.getId());
+        return newCampaign;
     }
 
     @Override
@@ -92,6 +93,11 @@ public class CampaignService implements ICampaignService {
         Campaign campaign = campaignRepository.findById(id)
                 .filter(c -> !c.isDeleted())
                 .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with id: " + id));
+        String campaignName = request.getName().trim();
+        Campaign oldCampaign = campaignRepository.findByName(campaignName);
+        if (!oldCampaign.isDeleted()) {
+            throw new AlreadyExistsException("Campaign with name '" + campaignName + "' already exists.");
+        }
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startDate = request.getStartDate();
         LocalDateTime endDate = request.getEndDate();
@@ -102,7 +108,7 @@ public class CampaignService implements ICampaignService {
             throw new IllegalArgumentException("Campaign start date must be before the end date.");
         }
 
-        campaign.setName(request.getName().trim());
+        campaign.setName(campaignName);
         campaign.setStartDate(startDate);
         campaign.setEndDate(endDate);
         if (request.getMinQuantity() != null) {
@@ -115,8 +121,12 @@ public class CampaignService implements ICampaignService {
             campaign.setTotalAmount(request.getTotalAmount());
         }
         campaign.setStatus(determineCampaignStatus(startDate, endDate));
-
         if (request.getProductId() != null && !request.getProductId().trim().isEmpty()) {
+            if (campaign.getStatus().equals(CampaignStatus.ACTIVE)
+                    || campaign.getStatus().equals(CampaignStatus.CANCELLED)
+                    || campaign.getStatus().equals(CampaignStatus.COMPLETED)) {
+                throw new CampaignStatusException("Cannot change product in this status");
+            }
             UUID prodId = UUID.fromString(request.getProductId().trim());
             Product product = productRepository.findById(prodId)
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + request.getProductId()));

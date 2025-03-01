@@ -32,4 +32,39 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleAuthorizationDeniedException(AuthorizationDeniedException ex) {
         return new ResponseEntity<>(Map.of("message", "Access Denied: You don't have permission to access this resource."), HttpStatus.FORBIDDEN);
     }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ResponseEntity<Map<String, String>> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        log.error("ResourceNotFoundException: {}", ex.getMessage(), ex);
+        return new ResponseEntity<>(Map.of("message", ex.getMessage()), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(AlreadyExistsException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ResponseEntity<Map<String, String>> handleAlreadyExistsException(AlreadyExistsException ex) {
+        log.error("AlreadyExistsException: {}", ex.getMessage(), ex);
+        return new ResponseEntity<>(Map.of("message", ex.getMessage()), HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(CampaignStatusException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ResponseEntity<Map<String, String>> handleCampaignStatusException(CampaignStatusException ex) {
+        log.error("Campaign status error: {}", ex.getMessage(), ex);
+        return new ResponseEntity<>(Map.of("message", ex.getMessage()), HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<Map<String, String>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        log.error("Invalid argument: {}", ex.getMessage(), ex);
+        return new ResponseEntity<>(Map.of("message", ex.getMessage()), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ResponseEntity<Map<String, String>> handleGlobalException(Exception ex) {
+        log.error("An unexpected error occurred: {}", ex.getMessage(), ex);
+        return new ResponseEntity<>(Map.of("message", "An unexpected error occurred."), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }
