@@ -41,7 +41,7 @@ public class CampaignService implements ICampaignService {
     public Campaign createCampaign(CreateCampaignRequest request) {
         String campaignName = request.getName().trim();
         Campaign oldCampaign = campaignRepository.findByName(campaignName);
-        if (!oldCampaign.isDeleted()) {
+        if (oldCampaign != null && !oldCampaign.isDeleted()) {
             throw new AlreadyExistsException("Campaign with name '" + campaignName + "' already exists.");
         }
         LocalDateTime now = LocalDateTime.now();
@@ -95,7 +95,7 @@ public class CampaignService implements ICampaignService {
                 .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with id: " + id));
         String campaignName = request.getName().trim();
         Campaign oldCampaign = campaignRepository.findByName(campaignName);
-        if (!oldCampaign.isDeleted()) {
+        if (oldCampaign != null && !oldCampaign.isDeleted()) {
             throw new AlreadyExistsException("Campaign with name '" + campaignName + "' already exists.");
         }
         LocalDateTime now = LocalDateTime.now();
