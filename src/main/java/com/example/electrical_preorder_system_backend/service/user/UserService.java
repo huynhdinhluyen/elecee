@@ -8,11 +8,15 @@ import com.example.electrical_preorder_system_backend.dto.request.UpdatePassword
 import com.example.electrical_preorder_system_backend.dto.request.UpdateUserRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UserSignUpRequest;
 import com.example.electrical_preorder_system_backend.dto.response.AuthenticationResponse;
+import com.example.electrical_preorder_system_backend.dto.response.DeviceTokenDTO;
 import com.example.electrical_preorder_system_backend.dto.response.UserDTO;
+import com.example.electrical_preorder_system_backend.entity.DeviceToken;
 import com.example.electrical_preorder_system_backend.entity.User;
 import com.example.electrical_preorder_system_backend.enums.UserRole;
 import com.example.electrical_preorder_system_backend.enums.UserStatus;
+import com.example.electrical_preorder_system_backend.mapper.DeviceTokenMapper;
 import com.example.electrical_preorder_system_backend.mapper.UserMapper;
+import com.example.electrical_preorder_system_backend.repository.DeviceTokenRepository;
 import com.example.electrical_preorder_system_backend.repository.UserRepository;
 import com.example.electrical_preorder_system_backend.service.email.EmailService;
 import com.example.electrical_preorder_system_backend.util.Validator;
@@ -30,6 +34,7 @@ import org.springframework.transaction.TransactionSystemException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -43,6 +48,7 @@ public class UserService implements IUserService {
     private final GoogleIdentityClient googleIdentityClient;
     private final GoogleUserClient googleUserClient;
     private final EmailService emailService;
+    private final DeviceTokenRepository deviceTokenRepository;
 
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String clientId;
@@ -222,6 +228,25 @@ public class UserService implements IUserService {
         } else {
             throw new IllegalArgumentException("Invalid password");
         }
+    }
+
+    @Override
+    public DeviceTokenDTO registerDeviceToken(UUID id, String token) {
+        // Check valid of user id
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found."));
+
+        // Check if the token already exists
+        List<DeviceToken> deviceTokens = user.getDeviceTokens();
+        for (DeviceToken deviceToken : deviceTokens) {
+            if (deviceToken.getToken().equals(token)) {
+                throw new IllegalArgumentException("Device token already exists.");
+            }
+        }
+        // Create new device token
+        DeviceToken newDeviceToken = DeviceToken.builder().token(token).user(user).build();
+        user.getDeviceTokens().add(newDeviceToken);
+        return DeviceTokenMapper.toDeviceTokenDTO(deviceTokenRepository.save(newDeviceToken));
     }
 
     public void delete(UUID id) {

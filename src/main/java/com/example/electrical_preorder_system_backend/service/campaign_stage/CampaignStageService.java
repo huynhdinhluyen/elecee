@@ -38,7 +38,7 @@ public class CampaignStageService implements ICampaignStageService {
                 .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with id: " + campaignId));
         String stageName = request.getName().trim();
         CampaignStage oldStage = campaignStageRepository.findByName(stageName);
-        if (!oldStage.isDeleted()) {
+        if (oldStage != null && !oldStage.isDeleted()) {
             throw new AlreadyExistsException("Stage with name '" + stageName + "' already exists.");
         }
         if (request.getStartDate().isBefore(campaign.getStartDate())) {
@@ -71,7 +71,7 @@ public class CampaignStageService implements ICampaignStageService {
                 .orElseThrow(() -> new ResourceNotFoundException("Campaign stage not found with id: " + stageId));
         String stageName = request.getName().trim();
         CampaignStage oldStage = campaignStageRepository.findByName(stageName);
-        if (!oldStage.isDeleted()) {
+        if (oldStage != null && !oldStage.isDeleted()) {
             throw new AlreadyExistsException("Stage with name '" + stageName + "' already exists.");
         }
         Campaign campaign = stage.getCampaign();

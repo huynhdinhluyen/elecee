@@ -4,6 +4,7 @@ import com.example.electrical_preorder_system_backend.dto.request.UpdatePassword
 import com.example.electrical_preorder_system_backend.dto.request.UpdateUserRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UserSignUpRequest;
 import com.example.electrical_preorder_system_backend.dto.response.AuthenticationResponse;
+import com.example.electrical_preorder_system_backend.dto.response.DeviceTokenDTO;
 import com.example.electrical_preorder_system_backend.dto.response.UserDTO;
 import com.example.electrical_preorder_system_backend.entity.User;
 import jakarta.mail.MessagingException;
@@ -29,4 +30,6 @@ public interface IUserService {
     Page<User> getUsers(Pageable pageable);
 
     void updatePassword(UUID id, UpdatePasswordRequest updatePasswordRequest);
+
+    DeviceTokenDTO registerDeviceToken(UUID id, String token);
 }
