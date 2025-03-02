@@ -45,7 +45,12 @@ public class NotificationService implements INotificationService{
             log.error("Invalid notification type");
             return;
         }
-        User user = userRepository.findById(request.getUserId()).get();
+        User user = null;
+        try{
+            user =  userRepository.findById(request.getUserId()).get();
+        }catch (Exception e){
+            log.error("User [{}] not found", request.getUserId());
+        }
         if (user == null) {
             log.error("User [{}] not found", request.getUserId());
             return;
