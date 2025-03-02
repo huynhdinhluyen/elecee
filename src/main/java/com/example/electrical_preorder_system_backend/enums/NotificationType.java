@@ -5,5 +5,6 @@ public enum NotificationType {
     PAYMENT_SUCCESS,
     PAYMENT_FAILED,
     SHIPMENT_STATUS,
-    GENERAL
+    GENERAL,
+    ADMIN_NOTIFICATION
 }
