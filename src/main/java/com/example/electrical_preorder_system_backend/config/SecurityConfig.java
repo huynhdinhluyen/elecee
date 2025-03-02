@@ -39,6 +39,7 @@ public class SecurityConfig {
             Map.entry("/users/*", HttpMethod.PUT),
             Map.entry("/users/*", HttpMethod.PATCH),
             Map.entry("/users/*", HttpMethod.DELETE),
+            Map.entry("/users/*/device-token", HttpMethod.POST),
             Map.entry("/products", HttpMethod.POST),
             Map.entry("/products/*", HttpMethod.PUT),
             Map.entry("/products/*", HttpMethod.DELETE),
@@ -47,7 +48,9 @@ public class SecurityConfig {
             Map.entry("/categories/*", HttpMethod.DELETE),
             Map.entry("/campaigns", HttpMethod.POST),
             Map.entry("/campaigns/*", HttpMethod.PUT),
-            Map.entry("/campaigns/*", HttpMethod.DELETE)
+            Map.entry("/campaigns/*", HttpMethod.DELETE),
+            Map.entry("/notifications/*", HttpMethod.GET),
+            Map.entry("/notifications/*", HttpMethod.PATCH)
     );
     private final UserDetailsService userDetailsService;
     private final AuthEntryPointJwt unauthorizedHandler;

@@ -1,5 +1,7 @@
 package com.example.electrical_preorder_system_backend.util;
 
+import com.example.electrical_preorder_system_backend.enums.NotificationType;
+
 public class Validator {
 
     public static boolean isValidPhoneNumber(String phoneNumber) {
@@ -16,5 +18,14 @@ public class Validator {
 
     public static boolean isValidPassword(String password) {
         return password.length() >= 6 && password.length() <= 50;
+    }
+
+    public static boolean isValidNotificationType(String type) {
+        try {
+            NotificationType.valueOf(type);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 }
