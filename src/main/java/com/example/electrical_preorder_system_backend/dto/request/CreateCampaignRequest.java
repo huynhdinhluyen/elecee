@@ -31,7 +31,6 @@ public class CreateCampaignRequest {
     @Min(0)
     private BigDecimal totalAmount;
 
-    @NotBlank
     private String status;
 
     @NotBlank
