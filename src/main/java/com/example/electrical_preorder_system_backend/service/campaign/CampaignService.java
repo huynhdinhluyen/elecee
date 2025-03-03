@@ -94,23 +94,29 @@ public class CampaignService implements ICampaignService {
                 .filter(c -> !c.isDeleted())
                 .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with id: " + id));
         String campaignName = request.getName().trim();
-        Campaign oldCampaign = campaignRepository.findByName(campaignName);
-        if (oldCampaign != null && !oldCampaign.isDeleted()) {
-            throw new AlreadyExistsException("Campaign with name '" + campaignName + "' already exists.");
+        if (!campaign.getName().equalsIgnoreCase(campaignName)) {
+            Campaign oldCampaign = campaignRepository.findByName(campaignName);
+            if (oldCampaign != null && !oldCampaign.isDeleted()
+                    && !oldCampaign.getId().equals(campaign.getId())) {
+                throw new AlreadyExistsException("Campaign with name '" + campaignName + "' already exists.");
+            }
+            campaign.setName(campaignName);
         }
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime startDate = request.getStartDate();
         LocalDateTime endDate = request.getEndDate();
-        if (startDate.isBefore(now)) {
-            throw new IllegalArgumentException("Campaign start date cannot be in the past.");
-        }
-        if (!startDate.isBefore(endDate)) {
-            throw new IllegalArgumentException("Campaign start date must be before the end date.");
+        if (startDate != null && endDate != null) {
+            if (startDate.isBefore(now)) {
+                throw new IllegalArgumentException("Campaign start date cannot be in the past.");
+            }
+            if (!startDate.isBefore(endDate)) {
+                throw new IllegalArgumentException("Campaign start date must be before the end date.");
+            }
+            campaign.setStartDate(startDate);
+            campaign.setEndDate(endDate);
+            campaign.setStatus(determineCampaignStatus(startDate, endDate));
         }
 
-        campaign.setName(campaignName);
-        campaign.setStartDate(startDate);
-        campaign.setEndDate(endDate);
         if (request.getMinQuantity() != null) {
             campaign.setMinQuantity(request.getMinQuantity());
         }
@@ -120,7 +126,6 @@ public class CampaignService implements ICampaignService {
         if (request.getTotalAmount() != null) {
             campaign.setTotalAmount(request.getTotalAmount());
         }
-        campaign.setStatus(determineCampaignStatus(startDate, endDate));
         if (request.getProductId() != null && !request.getProductId().trim().isEmpty()) {
             if (campaign.getStatus().equals(CampaignStatus.ACTIVE)
                     || campaign.getStatus().equals(CampaignStatus.CANCELLED)
