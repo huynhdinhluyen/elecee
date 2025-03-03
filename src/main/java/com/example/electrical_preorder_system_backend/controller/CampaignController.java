@@ -12,7 +12,6 @@ import com.example.electrical_preorder_system_backend.entity.CampaignStage;
 import com.example.electrical_preorder_system_backend.service.campaign.ICampaignService;
 import com.example.electrical_preorder_system_backend.service.campaign_stage.ICampaignStageService;
 import com.example.electrical_preorder_system_backend.service.stage_history.ICampaignHistoryService;
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
