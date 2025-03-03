@@ -48,6 +48,7 @@ public class SecurityConfig {
             Map.entry("/categories/*", HttpMethod.DELETE),
             Map.entry("/campaigns", HttpMethod.POST),
             Map.entry("/campaigns/*", HttpMethod.PUT),
+            Map.entry("/campaigns/*", HttpMethod.PATCH),
             Map.entry("/campaigns/*", HttpMethod.DELETE),
             Map.entry("/notifications/*", HttpMethod.GET),
             Map.entry("/notifications/*", HttpMethod.PATCH)
