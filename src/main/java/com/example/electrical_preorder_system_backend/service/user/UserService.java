@@ -80,6 +80,7 @@ public class UserService implements IUserService {
                     .phoneNumber(userSignInRequest.getPhoneNumber())
                     .role(UserRole.valueOf(role))
                     .isVerified(false)
+                    .address(userSignInRequest.getAddress())
                     .status(userSignInRequest.isActive() ? UserStatus.ACTIVE : UserStatus.INACTIVE)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
