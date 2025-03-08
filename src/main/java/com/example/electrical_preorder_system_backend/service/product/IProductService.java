@@ -1,5 +1,6 @@
 package com.example.electrical_preorder_system_backend.service.product;
 
+import com.example.electrical_preorder_system_backend.dto.filter.ProductFilterCriteria;
 import com.example.electrical_preorder_system_backend.dto.request.CreateProductRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UpdateProductRequest;
 import com.example.electrical_preorder_system_backend.dto.response.ProductDTO;
@@ -12,6 +13,8 @@ import java.util.List;
 import java.util.UUID;
 
 public interface IProductService {
+    Page<ProductDTO> getFilteredProducts(ProductFilterCriteria criteria, Pageable pageable);
+
     Product addProduct(CreateProductRequest request, List<MultipartFile> files);
 
     Page<Product> getProducts(Pageable pageable);
