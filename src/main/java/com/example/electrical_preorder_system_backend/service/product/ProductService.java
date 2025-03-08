@@ -1,5 +1,7 @@
 package com.example.electrical_preorder_system_backend.service.product;
 
+import com.example.electrical_preorder_system_backend.dto.cache.CachedProductPage;
+import com.example.electrical_preorder_system_backend.dto.filter.ProductFilterCriteria;
 import com.example.electrical_preorder_system_backend.dto.request.CreateProductRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UpdateProductRequest;
 import com.example.electrical_preorder_system_backend.dto.response.CategoryDTO;
@@ -13,6 +15,7 @@ import com.example.electrical_preorder_system_backend.exception.AlreadyExistsExc
 import com.example.electrical_preorder_system_backend.exception.ResourceNotFoundException;
 import com.example.electrical_preorder_system_backend.repository.CategoryRepository;
 import com.example.electrical_preorder_system_backend.repository.ProductRepository;
+import com.example.electrical_preorder_system_backend.repository.specification.ProductSpecifications;
 import com.example.electrical_preorder_system_backend.service.CloudinaryService;
 import com.example.electrical_preorder_system_backend.util.SlugUtil;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +24,8 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,6 +34,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -38,6 +44,76 @@ public class ProductService implements IProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final CloudinaryService cloudinaryService;
+    private final RedisTemplate<String, Object> redisTemplate;
+
+    @Override
+    public Page<ProductDTO> getFilteredProducts(ProductFilterCriteria criteria, Pageable pageable) {
+        // Generate cache key
+        String cacheKey = generateCacheKey(criteria, pageable);
+
+        // Try to get from cache first
+        Page<ProductDTO> cachedResult = getCachedProductPage(cacheKey);
+        if (cachedResult != null) {
+            return cachedResult;
+        }
+
+        // If not in cache, query database
+        Specification<Product> spec = Specification.where(ProductSpecifications.isNotDeleted());
+
+        // Apply filters
+        if (criteria.getCategory() != null && !criteria.getCategory().isBlank()) {
+            spec = spec.and(ProductSpecifications.hasCategory(criteria.getCategory().trim()));
+        }
+
+        if (criteria.getQuery() != null && !criteria.getQuery().isBlank()) {
+            spec = spec.and(ProductSpecifications.matchesQuery(criteria.getQuery().trim()));
+        }
+
+        if (criteria.getMinPrice() != null) {
+            spec = spec.and(ProductSpecifications.priceGreaterThanOrEqual(criteria.getMinPrice()));
+        }
+
+        if (criteria.getMaxPrice() != null) {
+            spec = spec.and(ProductSpecifications.priceLessThanOrEqual(criteria.getMaxPrice()));
+        }
+
+        // Execute query and convert to DTOs
+        Page<ProductDTO> result = productRepository.findAll(spec, pageable)
+                .map(this::convertToDto);
+
+        // Cache the result
+        cacheProductPage(cacheKey, result);
+
+        return result;
+    }
+
+    private String generateCacheKey(ProductFilterCriteria criteria, Pageable pageable) {
+        StringBuilder sb = new StringBuilder("products-filtered-");
+        sb.append(criteria.hashCode())
+                .append('-')
+                .append(pageable.getPageNumber())
+                .append('-')
+                .append(pageable.getPageSize())
+                .append('-')
+                .append(pageable.getSort());
+        return sb.toString();
+    }
+
+    private void cacheProductPage(String key, Page<ProductDTO> productPage) {
+        CachedProductPage cachedPage = CachedProductPage.from(productPage);
+        redisTemplate.opsForValue().set(key, cachedPage, 1, TimeUnit.HOURS);
+        log.debug("Cached product page with key: {}", key);
+    }
+
+    private Page<ProductDTO> getCachedProductPage(String key) {
+        Object cachedObject = redisTemplate.opsForValue().get(key);
+        if (cachedObject instanceof CachedProductPage) {
+            log.debug("Cache hit for key: {}", key);
+            return ((CachedProductPage) cachedObject).toPage();
+        }
+        log.debug("Cache miss or type mismatch for key: {}", key);
+        return null;
+    }
 
     @Override
     @CacheEvict(value = "products", allEntries = true)
@@ -98,7 +174,7 @@ public class ProductService implements IProductService {
     }
 
     @Override
-    @Cacheable(value = "products", key = "#pageable.pageNumber + '-' + #pageable.pageSize + '-' + #pageable.sort.toString()")
+    @Cacheable(value = "products", key = "#pageable.pageNumber + '-' + #pageable.pageSize")
     public Page<Product> getProducts(Pageable pageable) {
         return productRepository.findActiveProductsSorted(pageable);
     }
