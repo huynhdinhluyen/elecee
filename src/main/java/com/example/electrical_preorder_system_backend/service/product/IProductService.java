@@ -13,17 +13,9 @@ import java.util.List;
 import java.util.UUID;
 
 public interface IProductService {
-    Page<ProductDTO> getFilteredProducts(ProductFilterCriteria criteria, Pageable pageable);
+    Page<ProductDTO> getProducts(ProductFilterCriteria criteria, Pageable pageable);
 
     Product addProduct(CreateProductRequest request, List<MultipartFile> files);
-
-    Page<Product> getProducts(Pageable pageable);
-
-    Page<Product> getProductsByCategory(String categoryName, Pageable pageable);
-
-    Page<Product> getProductsByName(String name, Pageable pageable);
-
-    Product getProductById(UUID id);
 
     Product updateProduct(UpdateProductRequest request, UUID id, List<MultipartFile> files);
 
@@ -31,17 +23,11 @@ public interface IProductService {
 
     Long countProducts();
 
-    Page<ProductDTO> getConvertedProducts(Pageable pageable);
-
     ProductDTO convertToDto(Product product);
 
-    Page<Product> searchProducts(String query, Pageable pageable);
-
-    Page<Product> searchProducts(String query, String category, Pageable pageable);
+    void clearProductCache();
 
     Product getProductBySlug(String slug);
-
-    Product getProductByProductCode(String productCode);
 
     void deleteProducts(List<UUID> ids);
 }
