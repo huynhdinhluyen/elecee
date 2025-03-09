@@ -16,12 +16,11 @@ import com.example.electrical_preorder_system_backend.exception.ResourceNotFound
 import com.example.electrical_preorder_system_backend.repository.CategoryRepository;
 import com.example.electrical_preorder_system_backend.repository.ProductRepository;
 import com.example.electrical_preorder_system_backend.repository.specification.ProductSpecifications;
-import com.example.electrical_preorder_system_backend.service.CloudinaryService;
+import com.example.electrical_preorder_system_backend.service.cloudinary.CloudinaryService;
 import com.example.electrical_preorder_system_backend.util.SlugUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -30,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -47,7 +47,7 @@ public class ProductService implements IProductService {
     private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
-    public Page<ProductDTO> getFilteredProducts(ProductFilterCriteria criteria, Pageable pageable) {
+    public Page<ProductDTO> getProducts(ProductFilterCriteria criteria, Pageable pageable) {
         // Generate cache key
         String cacheKey = generateCacheKey(criteria, pageable);
 
@@ -100,19 +100,51 @@ public class ProductService implements IProductService {
     }
 
     private void cacheProductPage(String key, Page<ProductDTO> productPage) {
-        CachedProductPage cachedPage = CachedProductPage.from(productPage);
-        redisTemplate.opsForValue().set(key, cachedPage, 1, TimeUnit.HOURS);
-        log.debug("Cached product page with key: {}", key);
+        try {
+            CachedProductPage cachedPage = CachedProductPage.from(productPage);
+            redisTemplate.opsForValue().set(key, cachedPage, 1, TimeUnit.HOURS);
+            log.debug("Successfully cached product page with key: {}", key);
+        } catch (Exception ex) {
+            log.error("Failed to cache product page: {}", ex.getMessage());
+        }
     }
 
     private Page<ProductDTO> getCachedProductPage(String key) {
-        Object cachedObject = redisTemplate.opsForValue().get(key);
-        if (cachedObject instanceof CachedProductPage) {
-            log.debug("Cache hit for key: {}", key);
-            return ((CachedProductPage) cachedObject).toPage();
+        try {
+            Object cachedObject = redisTemplate.opsForValue().get(key);
+            if (cachedObject instanceof CachedProductPage) {
+                log.debug("Cache hit for key: {}", key);
+                return ((CachedProductPage) cachedObject).toPage();
+            }
+            log.debug("Cache miss for key: {}", key);
+        } catch (Exception ex) {
+            log.error("Error retrieving cached product page: {}", ex.getMessage());
         }
-        log.debug("Cache miss or type mismatch for key: {}", key);
         return null;
+    }
+
+    @Override
+    public void clearProductCache() {
+        try {
+            Set<String> keys = redisTemplate.keys("products-filtered-*");
+            if (!keys.isEmpty()) {
+                redisTemplate.delete(keys);
+                log.debug("Cleared {} filtered product cache entries", keys.size());
+            } else {
+                log.debug("No filtered product cache entries found to clear");
+            }
+        } catch (Exception ex) {
+            log.error("Error clearing filtered product cache: {}", ex.getMessage());
+        }
+    }
+
+    @Override
+    public Product getProductBySlug(String slug) {
+        Product product = productRepository.findBySlug(slug.trim());
+        if (product == null || product.isDeleted()) {
+            throw new ResourceNotFoundException("Product not found with slug: " + slug);
+        }
+        return product;
     }
 
     @Override
@@ -170,47 +202,8 @@ public class ProductService implements IProductService {
         if (request.getPosition() != null) {
             adjustPositions(product, request.getPosition());
         }
-        return product;
-    }
-
-    @Override
-    @Cacheable(value = "products", key = "#pageable.pageNumber + '-' + #pageable.pageSize")
-    public Page<Product> getProducts(Pageable pageable) {
-        return productRepository.findActiveProductsSorted(pageable);
-    }
-
-    @Override
-    public Page<Product> getProductsByCategory(String categoryName, Pageable pageable) {
-        return productRepository.findByCategory_NameAndIsDeletedFalse(categoryName, pageable);
-    }
-
-    @Override
-    public Page<Product> getProductsByName(String name, Pageable pageable) {
-        return productRepository.findByNameContainingIgnoreCaseAndIsDeletedFalse(name, pageable);
-    }
-
-    @Override
-    public Product getProductById(UUID id) {
-        return productRepository.findById(id)
-                .filter(p -> !p.isDeleted())
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found!"));
-    }
-
-    @Override
-    public Product getProductBySlug(String slug) {
-        Product product = productRepository.findBySlug(slug.trim());
-        if (product == null || product.isDeleted()) {
-            throw new ResourceNotFoundException("Product not found with slug: " + slug);
-        }
-        return product;
-    }
-
-    @Override
-    public Product getProductByProductCode(String productCode) {
-        Product product = productRepository.findByProductCode(productCode.trim());
-        if (product == null || product.isDeleted()) {
-            throw new ResourceNotFoundException("Product not found with code: " + productCode);
-        }
+        clearProductCache();
+        log.info("Product added and cache cleared for id: {}", product.getId());
         return product;
     }
 
@@ -233,6 +226,8 @@ public class ProductService implements IProductService {
         updateBasicFields(existingProduct, request);
         updateCategory(existingProduct, request);
         updateImageProducts(existingProduct, request, files);
+        clearProductCache();
+        log.info("Product updated and cache cleared");
         return existingProduct;
     }
 
@@ -273,22 +268,31 @@ public class ProductService implements IProductService {
     }
 
     private void updateImageProducts(Product product, UpdateProductRequest request, List<MultipartFile> files) {
-        Set<String> oldImageUrls = request.getOldImageProducts().stream()
-                .map(dto -> dto.getImageUrl().trim())
-                .collect(Collectors.toSet());
-
-        if (product.getImageProducts() != null) {
-            product.getImageProducts().forEach(img -> {
-                if (!oldImageUrls.contains(img.getImageUrl())) {
-                    img.setDeleted(true);
-                }
-            });
-        }
-
         if (files != null && !files.isEmpty()) {
+            Set<String> oldImageUrls = request.getOldImageProducts().stream()
+                    .map(dto -> dto.getImageUrl().trim())
+                    .collect(Collectors.toSet());
+
+            if (product.getImageProducts() != null) {
+                // Find images to delete
+                List<String> imagesToDelete = new ArrayList<>();
+                product.getImageProducts().forEach(img -> {
+                    if (!oldImageUrls.contains(img.getImageUrl())) {
+                        img.setDeleted(true);
+                        imagesToDelete.add(img.getImageUrl());
+                    }
+                });
+
+                // Delete from Cloudinary asynchronously
+                if (!imagesToDelete.isEmpty()) {
+                    deleteImagesFromCloudinary(imagesToDelete);
+                }
+            }
+
             List<CompletableFuture<String>> futures = files.stream()
                     .map(cloudinaryService::uploadFileAsync)
                     .toList();
+
             List<String> newImageUrls = futures.stream()
                     .map(CompletableFuture::join)
                     .toList();
@@ -307,15 +311,25 @@ public class ProductService implements IProductService {
     }
 
     @Override
+    @Transactional
     @CacheEvict(value = "products", allEntries = true)
     public void deleteProductById(UUID id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found!"));
+        List<String> imageUrls = product.getImageProducts().stream()
+                .filter(img -> !img.isDeleted())
+                .map(ImageProduct::getImageUrl)
+                .collect(Collectors.toList());
+
+        deleteImagesFromCloudinary(imageUrls);
         product.setDeleted(true);
         productRepository.save(product);
+        clearProductCache();
+        log.info("Product marked deleted and cache cleared for id: {}", id);
     }
 
     @Override
+    @Transactional
     @CacheEvict(value = "products", allEntries = true)
     public void deleteProducts(List<UUID> ids) {
         List<Product> products = productRepository.findAllById(ids)
@@ -327,18 +341,23 @@ public class ProductService implements IProductService {
             throw new ResourceNotFoundException("Some products were not found or already deleted.");
         }
 
+        List<String> allImageUrls = products.stream()
+                .flatMap(p -> p.getImageProducts().stream())
+                .filter(img -> !img.isDeleted())
+                .map(ImageProduct::getImageUrl)
+                .collect(Collectors.toList());
+
+        deleteImagesFromCloudinary(allImageUrls);
+
         products.forEach(p -> p.setDeleted(true));
         productRepository.saveAll(products);
+        clearProductCache();
+        log.info("Multiple products marked deleted and cache cleared for ids: {}", ids);
     }
 
     @Override
     public Long countProducts() {
         return productRepository.countActiveProducts();
-    }
-
-    @Override
-    public Page<ProductDTO> getConvertedProducts(Pageable pageable) {
-        return getProducts(pageable).map(this::convertToDto);
     }
 
     @Override
@@ -382,6 +401,27 @@ public class ProductService implements IProductService {
         return dto;
     }
 
+    private void deleteImagesFromCloudinary(List<String> imageUrls) {
+        if (imageUrls == null || imageUrls.isEmpty()) return;
+
+        List<CompletableFuture<Boolean>> deleteFutures = imageUrls.stream()
+                .map(cloudinaryService::deleteImageAsync)
+                .toList();
+
+        CompletableFuture.allOf(deleteFutures.toArray(new CompletableFuture[0]))
+                .thenAccept(v -> {
+                    long successCount = deleteFutures.stream()
+                            .map(CompletableFuture::join)
+                            .filter(success -> success)
+                            .count();
+                    log.info("Deleted {}/{} images from Cloudinary", successCount, imageUrls.size());
+                })
+                .exceptionally(ex -> {
+                    log.error("Error deleting images from Cloudinary", ex);
+                    return null;
+                });
+    }
+
     private String generateUniqueSlug(String name) {
         String baseSlug = SlugUtil.generateSlug(name);
         String uniqueSlug = baseSlug;
@@ -414,21 +454,5 @@ public class ProductService implements IProductService {
         } catch (Exception ex) {
             log.error("Error adjusting product positions for product ID {}: {}", product.getId(), ex.getMessage(), ex);
         }
-    }
-
-    @Override
-    public Page<Product> searchProducts(String query, Pageable pageable) {
-        if (query == null || query.isBlank()) {
-            return getProducts(pageable);
-        }
-        return productRepository.searchProducts(query, pageable);
-    }
-
-    @Override
-    public Page<Product> searchProducts(String query, String category, Pageable pageable) {
-        if (query == null || query.isBlank()) {
-            return productRepository.findByCategory_NameAndIsDeletedFalse(category, pageable);
-        }
-        return productRepository.searchProductsByCategory(query, category, pageable);
     }
 }
