@@ -1,6 +1,7 @@
 package com.example.electrical_preorder_system_backend.util;
 
 import com.example.electrical_preorder_system_backend.enums.NotificationType;
+import com.example.electrical_preorder_system_backend.enums.OrderStatus;
 
 public class Validator {
 
@@ -23,9 +24,19 @@ public class Validator {
     public static boolean isValidNotificationType(String type) {
         try {
             NotificationType.valueOf(type);
+            return false;
+        } catch (IllegalArgumentException e) {
+            return true;
+        }
+    }
+
+    public static boolean isValidOrderStatus(String status){
+        try {
+            OrderStatus.valueOf(status);
             return true;
         } catch (IllegalArgumentException e) {
             return false;
         }
     }
+
 }

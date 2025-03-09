@@ -2,12 +2,14 @@ package com.example.electrical_preorder_system_backend.dto.response;
 
 import com.example.electrical_preorder_system_backend.enums.CampaignStatus;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
+@NoArgsConstructor
 public class CampaignDTO {
     private UUID id;
     private String name;

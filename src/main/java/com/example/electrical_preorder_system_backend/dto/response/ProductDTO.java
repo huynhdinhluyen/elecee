@@ -2,7 +2,9 @@ package com.example.electrical_preorder_system_backend.dto.response;
 
 import com.example.electrical_preorder_system_backend.enums.ProductStatus;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
@@ -13,6 +15,7 @@ import java.util.UUID;
 
 @Data
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@NoArgsConstructor
 public class ProductDTO {
     UUID id;
     String productCode;

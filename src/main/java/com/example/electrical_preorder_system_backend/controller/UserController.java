@@ -115,4 +115,16 @@ public class UserController {
     ) {
         return ResponseEntity.status(201).body(new ApiResponse("Device token registered successfully", userService.registerDeviceToken(id, request.getToken())));
     }
+
+    @GetMapping("/orders")
+    @SecurityRequirement(name = "Bearer Authentication")
+    @Operation(summary = "Get orders of authenticated user")
+    public ResponseEntity<ApiResponse> getOrdersByUserId(
+            @RequestParam(defaultValue = "all") String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(new ApiResponse("Orders retrieved successfully",
+                userService.getOrders(userService.getAuthenticatedUser(), status, page, size)));
+    }
 }
