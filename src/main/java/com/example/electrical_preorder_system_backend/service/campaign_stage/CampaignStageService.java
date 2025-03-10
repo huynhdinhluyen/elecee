@@ -14,6 +14,8 @@ import com.example.electrical_preorder_system_backend.repository.CampaignStageRe
 import com.example.electrical_preorder_system_backend.repository.StageHistoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +33,26 @@ public class CampaignStageService implements ICampaignStageService {
     private final CampaignStageRepository campaignStageRepository;
     private final CampaignRepository campaignRepository;
     private final StageHistoryRepository stageHistoryRepository;
+
+//    @Override
+//    public Map<String, Object> getCampaignPerformanceMetrics(UUID campaignId) {
+//        Campaign campaign = getCampaignById(campaignId);
+//        List<CampaignStage> stages = getCampaignStagesByCampaignId(campaignId);
+//
+//        int totalSold = stages.stream().mapToInt(CampaignStage::getQuantitySold).sum();
+//        double progressPercentage = campaign.getMaxQuantity() > 0 ?
+//                (totalSold * 100.0 / campaign.getMaxQuantity()) : 0;
+//
+//        Map<String, Object> metrics = new HashMap<>();
+//        metrics.put("totalSold", totalSold);
+//        metrics.put("totalTarget", campaign.getMaxQuantity());
+//        metrics.put("progressPercentage", progressPercentage);
+//        metrics.put("activeStages", stages.stream()
+//                .filter(s -> s.getStatus() == CampaignStageStatus.ACTIVE)
+//                .count());
+//
+//        return metrics;
+//    }
 
     @Override
     public CampaignStage createCampaignStage(CreateCampaignStageRequest request, UUID campaignId) {
@@ -96,9 +118,7 @@ public class CampaignStageService implements ICampaignStageService {
 
     @Override
     public List<CampaignStage> getCampaignStagesByCampaignId(UUID campaignId) {
-        Campaign campaign = campaignRepository.findById(campaignId)
-                .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with id: " + campaignId));
-        return campaignStageRepository.findCampaignStagesByCampaign(campaign);
+        return campaignStageRepository.findStageByCampaignIdAndIsDeletedFalse(campaignId);
     }
 
     @Override
@@ -110,6 +130,7 @@ public class CampaignStageService implements ICampaignStageService {
 
     @Override
     @Transactional
+//    @CacheEvict(value = "campaignStages", key = "#campaignId")
     public void deleteCampaignStage(UUID campaignId, UUID stageId) {
         Campaign campaign = campaignRepository.findActiveCampaignById(campaignId);
         if (campaign == null) {
@@ -123,8 +144,9 @@ public class CampaignStageService implements ICampaignStageService {
     }
 
     @Override
-    public List<CampaignStageDTO> getConvertedCampaignStages(UUID id) {
-        return getCampaignStagesByCampaignId(id).stream()
+//    @Cacheable(value = "campaignStages", key = "#campaignId")
+    public List<CampaignStageDTO> getConvertedCampaignStages(UUID campaignId) {
+        return getCampaignStagesByCampaignId(campaignId).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }

@@ -13,6 +13,8 @@ public interface ICampaignStageService {
 
     CampaignStage getCampaignStageById(UUID id);
 
+//    Map<String, Object> getCampaignPerformanceMetrics(UUID campaignId);
+
     CampaignStage createCampaignStage(CreateCampaignStageRequest request, UUID campaignId);
 
     CampaignStage updateCampaignStage(UUID campaignId, UUID stageId, UpdateCampaignStageRequest request);

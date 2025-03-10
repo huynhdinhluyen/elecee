@@ -10,6 +10,8 @@ import org.springframework.data.domain.Pageable;
 import java.util.UUID;
 
 public interface ICampaignService {
+//    Page<Campaign> getFilteredCampaigns(CampaignFilterCriteria criteria, Pageable pageable);
+
     Campaign createCampaign(CreateCampaignRequest request);
 
     Page<Campaign> getCampaigns(Pageable pageable);
