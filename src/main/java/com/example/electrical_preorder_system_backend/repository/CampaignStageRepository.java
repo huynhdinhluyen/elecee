@@ -20,4 +20,7 @@ public interface CampaignStageRepository extends JpaRepository<CampaignStage, UU
     List<CampaignStage> findByIsDeletedFalse();
 
     CampaignStage findByName(String name);
+
+    @Query("SELECT cs FROM CampaignStage cs WHERE cs.campaign.id = :campaignId AND cs.isDeleted = false")
+    List<CampaignStage> findStageByCampaignIdAndIsDeletedFalse(@Param("campaignId") UUID campaignId);
 }

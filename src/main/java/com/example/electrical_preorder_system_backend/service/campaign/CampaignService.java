@@ -35,24 +35,59 @@ public class CampaignService implements ICampaignService {
     private final ProductRepository productRepository;
     private final ProductService productService;
 
+//    @Override
+//    @Cacheable(value = "campaigns",
+//            key = "'filtered-' + #criteria.hashCode() + '-' + #pageable.pageNumber + '-' + #pageable.pageSize")
+//    public Page<Campaign> getFilteredCampaigns(CampaignFilterCriteria criteria, Pageable pageable) {
+//        Specification<Campaign> spec = Specification.where((root, query, cb) -> cb.equal(root.get("deleted"), false));
+//
+//        if (criteria.getProductId() != null) {
+//            spec = spec.and((root, query, cb) -> cb.equal(root.get("product").get("id"), criteria.getProductId()));
+//        }
+//
+//        if (criteria.getStatus() != null) {
+//            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), criteria.getStatus()));
+//        }
+//
+//        if (criteria.getStartDateFrom() != null) {
+//            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("startDate"), criteria.getStartDateFrom()));
+//        }
+//
+//        return campaignRepository.findAll(spec, pageable);
+//    }
+
+//    @Override
+//    public Map<String, Object> getCampaignPerformanceMetrics(UUID campaignId) {
+//        Campaign campaign = getCampaignById(campaignId);
+//        List<CampaignStage> stages = getCampaignStagesByCampaignId(campaignId);
+//
+//        int totalSold = stages.stream().mapToInt(CampaignStage::getQuantitySold).sum();
+//        double progressPercentage = campaign.getMaxQuantity() > 0 ?
+//                (totalSold * 100.0 / campaign.getMaxQuantity()) : 0;
+//
+//        Map<String, Object> metrics = new HashMap<>();
+//        metrics.put("totalSold", totalSold);
+//        metrics.put("totalTarget", campaign.getMaxQuantity());
+//        metrics.put("progressPercentage", progressPercentage);
+//        metrics.put("activeStages", stages.stream()
+//                .filter(s -> s.getStatus() == CampaignStageStatus.ACTIVE)
+//                .count());
+//
+//        return metrics;
+//    }
+
     @Override
     @Transactional
-    @CacheEvict(value = "campaigns", allEntries = true)
+//    @CacheEvict(value = "campaigns", allEntries = true)
     public Campaign createCampaign(CreateCampaignRequest request) {
         String campaignName = request.getName().trim();
         Campaign oldCampaign = campaignRepository.findByName(campaignName);
         if (oldCampaign != null && !oldCampaign.isDeleted()) {
             throw new AlreadyExistsException("Campaign with name '" + campaignName + "' already exists.");
         }
-        LocalDateTime now = LocalDateTime.now();
         LocalDateTime startDate = request.getStartDate();
         LocalDateTime endDate = request.getEndDate();
-        if (startDate.isBefore(now)) {
-            throw new IllegalArgumentException("Campaign start date cannot be in the past.");
-        }
-        if (!startDate.isBefore(endDate)) {
-            throw new IllegalArgumentException("Campaign start date must be before the end date.");
-        }
+        validateCampaignDates(startDate, endDate);
 
         Campaign newCampaign = new Campaign();
         newCampaign.setName(campaignName);
@@ -74,12 +109,13 @@ public class CampaignService implements ICampaignService {
     }
 
     @Override
-    @Cacheable(value = "campaigns", key = "#pageable.pageNumber + '-' + #pageable.pageSize")
+//    @Cacheable(value = "campaigns", key = "#pageable.pageNumber + '-' + #pageable.pageSize")
     public Page<Campaign> getCampaigns(Pageable pageable) {
         return campaignRepository.findByIsDeletedFalse(pageable);
     }
 
     @Override
+//    @Cacheable(value = "campaigns", key = "'campaign-' + #id")
     public Campaign getCampaignById(UUID id) {
         return campaignRepository.findById(id)
                 .filter(c -> !c.isDeleted())
@@ -88,7 +124,7 @@ public class CampaignService implements ICampaignService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "campaigns", allEntries = true)
+//    @CacheEvict(value = "campaigns", allEntries = true)
     public Campaign updateCampaign(UUID id, UpdateCampaignRequest request) {
         Campaign campaign = campaignRepository.findById(id)
                 .filter(c -> !c.isDeleted())
@@ -102,16 +138,11 @@ public class CampaignService implements ICampaignService {
             }
             campaign.setName(campaignName);
         }
-        LocalDateTime now = LocalDateTime.now();
+
         LocalDateTime startDate = request.getStartDate();
         LocalDateTime endDate = request.getEndDate();
         if (startDate != null && endDate != null) {
-            if (startDate.isBefore(now)) {
-                throw new IllegalArgumentException("Campaign start date cannot be in the past.");
-            }
-            if (!startDate.isBefore(endDate)) {
-                throw new IllegalArgumentException("Campaign start date must be before the end date.");
-            }
+            validateCampaignDates(startDate, endDate);
             campaign.setStartDate(startDate);
             campaign.setEndDate(endDate);
             campaign.setStatus(determineCampaignStatus(startDate, endDate));
@@ -145,7 +176,7 @@ public class CampaignService implements ICampaignService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "campaigns", allEntries = true)
+//    @CacheEvict(value = "campaigns", key = "'campaign-' + #id")
     public void deleteCampaign(UUID id) {
         Campaign campaign = campaignRepository.findById(id)
                 .filter(c -> !c.isDeleted())
@@ -208,5 +239,15 @@ public class CampaignService implements ICampaignService {
         campaignDTO.setCreatedAt(campaign.getCreatedAt());
         campaignDTO.setUpdatedAt(campaign.getUpdatedAt());
         return campaignDTO;
+    }
+
+    private void validateCampaignDates(LocalDateTime startDate, LocalDateTime endDate) {
+        LocalDateTime now = LocalDateTime.now();
+        if (startDate.isBefore(now)) {
+            throw new IllegalArgumentException("Campaign start date cannot be in the past.");
+        }
+        if (!startDate.isBefore(endDate)) {
+            throw new IllegalArgumentException("Campaign start date must be before the end date.");
+        }
     }
 }

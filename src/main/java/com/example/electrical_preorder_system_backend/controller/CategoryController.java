@@ -6,7 +6,10 @@ import com.example.electrical_preorder_system_backend.dto.response.ApiResponse;
 import com.example.electrical_preorder_system_backend.dto.response.CategoryDTO;
 import com.example.electrical_preorder_system_backend.exception.AlreadyExistsException;
 import com.example.electrical_preorder_system_backend.service.category.ICategoryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,26 +24,44 @@ import static org.springframework.http.HttpStatus.CONFLICT;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("${api.prefix}/categories")
+@Tag(name = "Category API", description = "APIs for managing product categories")
 public class CategoryController {
 
     private final ICategoryService categoryService;
 
+    @Operation(
+            summary = "Get all categories",
+            description = "Returns a list of all active (non-deleted) product categories"
+    )
     @GetMapping
     public ResponseEntity<ApiResponse> getAllCategories() {
         List<CategoryDTO> categories = categoryService.getAllCategories();
         return ResponseEntity.ok(new ApiResponse("Categories retrieved successfully", categories));
     }
 
+    @Operation(
+            summary = "Get category by ID",
+            description = "Returns a single category by its UUID identifier"
+    )
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse> getCategoryById(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse> getCategoryById(
+            @Parameter(description = "Category UUID", required = true) @PathVariable UUID id
+    ) {
         CategoryDTO category = categoryService.getCategoryById(id);
         return ResponseEntity.ok(new ApiResponse("Category retrieved successfully", category));
     }
 
-    @PostMapping
+    @Operation(
+            summary = "Create new category",
+            description = "Create a new product category. Requires admin role."
+    )
     @SecurityRequirement(name = "Bearer Authentication")
+    @PostMapping
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<ApiResponse> addCategory(@RequestBody CreateCategoryRequest categoryRequest) {
+    public ResponseEntity<ApiResponse> addCategory(
+            @Parameter(description = "New category data", required = true)
+            @RequestBody @Valid CreateCategoryRequest categoryRequest
+    ) {
         try {
             CategoryDTO newCategory = categoryService.createCategory(categoryRequest);
             return ResponseEntity.ok(new ApiResponse("success", newCategory));
@@ -49,19 +70,32 @@ public class CategoryController {
         }
     }
 
-    @PutMapping("/{id}")
+    @Operation(
+            summary = "Update a category",
+            description = "Update an existing category by ID. Requires admin role."
+    )
     @SecurityRequirement(name = "Bearer Authentication")
+    @PutMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<ApiResponse> updateCategory(@PathVariable UUID id,
-                                                      @RequestBody @Valid UpdateCategoryRequest request) {
+    public ResponseEntity<ApiResponse> updateCategory(
+            @Parameter(description = "Category UUID", required = true) @PathVariable UUID id,
+            @Parameter(description = "Updated category data", required = true)
+            @RequestBody @Valid UpdateCategoryRequest request
+    ) {
         CategoryDTO updatedCategory = categoryService.updateCategory(id, request);
         return ResponseEntity.ok(new ApiResponse("Category updated successfully", updatedCategory));
     }
 
-    @DeleteMapping("/{id}")
+    @Operation(
+            summary = "Delete a category",
+            description = "Soft delete a category by ID (marks as deleted). Requires admin role."
+    )
     @SecurityRequirement(name = "Bearer Authentication")
+    @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
-    public ResponseEntity<ApiResponse> deleteCategoryById(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse> deleteCategoryById(
+            @Parameter(description = "Category UUID", required = true) @PathVariable UUID id
+    ) {
         categoryService.deleteCategoryById(id);
         return ResponseEntity.ok(new ApiResponse("success", null));
     }
