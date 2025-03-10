@@ -28,7 +28,7 @@ public class DeviceToken {
     private String token;
 
     @Column(nullable = false)
-    boolean isDeleted = false;
+    private boolean isDeleted = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

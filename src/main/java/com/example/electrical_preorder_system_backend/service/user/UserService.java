@@ -9,14 +9,18 @@ import com.example.electrical_preorder_system_backend.dto.request.UpdateUserRequ
 import com.example.electrical_preorder_system_backend.dto.request.UserSignUpRequest;
 import com.example.electrical_preorder_system_backend.dto.response.AuthenticationResponse;
 import com.example.electrical_preorder_system_backend.dto.response.DeviceTokenDTO;
+import com.example.electrical_preorder_system_backend.dto.response.OrderListDTO;
 import com.example.electrical_preorder_system_backend.dto.response.UserDTO;
 import com.example.electrical_preorder_system_backend.entity.DeviceToken;
+import com.example.electrical_preorder_system_backend.entity.Order;
 import com.example.electrical_preorder_system_backend.entity.User;
 import com.example.electrical_preorder_system_backend.enums.UserRole;
 import com.example.electrical_preorder_system_backend.enums.UserStatus;
 import com.example.electrical_preorder_system_backend.mapper.DeviceTokenMapper;
+import com.example.electrical_preorder_system_backend.mapper.OrderMapper;
 import com.example.electrical_preorder_system_backend.mapper.UserMapper;
 import com.example.electrical_preorder_system_backend.repository.DeviceTokenRepository;
+import com.example.electrical_preorder_system_backend.repository.OrderRepository;
 import com.example.electrical_preorder_system_backend.repository.UserRepository;
 import com.example.electrical_preorder_system_backend.service.email.EmailService;
 import com.example.electrical_preorder_system_backend.util.Validator;
@@ -24,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -49,6 +54,7 @@ public class UserService implements IUserService {
     private final GoogleUserClient googleUserClient;
     private final EmailService emailService;
     private final DeviceTokenRepository deviceTokenRepository;
+    private final OrderRepository orderRepository;
 
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String clientId;
@@ -133,7 +139,7 @@ public class UserService implements IUserService {
             userRepository.save(user);
             return new AuthenticationResponse(token);
         } catch (Exception e) {
-//            e.printStackTrace();
+            e.printStackTrace();
             throw new RuntimeException("Google login failed", e);
         }
     }
@@ -250,6 +256,19 @@ public class UserService implements IUserService {
         return DeviceTokenMapper.toDeviceTokenDTO(deviceTokenRepository.save(newDeviceToken));
     }
 
+    @Override
+    public User getAuthenticatedUser() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    @Override
+    public User getUserById(UUID id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
     public void delete(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -290,5 +309,24 @@ public class UserService implements IUserService {
         return (authenticatedUser.getRole().equals(UserRole.ROLE_CUSTOMER) || authenticatedUser.getRole().equals(UserRole.ROLE_STAFF)) && !authenticatedUser.getId().equals(id);
     }
 
-
+    @Override
+    public OrderListDTO getOrders(User user, String status, int page, int size) {
+        if (Validator.isValidOrderStatus(status)) {
+            throw new IllegalArgumentException("Invalid order status");
+        }
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Order> orderPage;
+        if (status.equals("all")) {
+            orderPage = orderRepository.findAllByUserId(user.getId(), pageable);
+        }else {
+            orderPage = orderRepository.findAllByUserIdAndStatus(user.getId(), status, pageable);
+        }
+        return OrderMapper.toOrderListDTO(
+                orderPage.getContent(),
+                orderPage.getTotalPages(),
+                orderPage.getTotalElements(),
+                orderPage.getNumber(),
+                orderPage.getSize()
+        );
+    }
 }
