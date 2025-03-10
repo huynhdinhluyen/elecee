@@ -12,4 +12,6 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
     Category findByName(String name);
 
     List<Category> findByIsDeletedFalseOrderByNameAsc();
+
+    Category findByNameIgnoreCase(String trimmedName);
 }

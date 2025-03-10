@@ -7,8 +7,11 @@ import com.example.electrical_preorder_system_backend.entity.Category;
 import com.example.electrical_preorder_system_backend.exception.AlreadyExistsException;
 import com.example.electrical_preorder_system_backend.exception.ResourceNotFoundException;
 import com.example.electrical_preorder_system_backend.repository.CategoryRepository;
+import com.example.electrical_preorder_system_backend.service.product.IProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,8 +25,10 @@ import java.util.stream.Collectors;
 public class CategoryService implements ICategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final IProductService productService;
 
     @Override
+    @Cacheable(value = "categories")
     public List<CategoryDTO> getAllCategories() {
         log.info("Fetching active categories from the database.");
         List<Category> categories = categoryRepository.findByIsDeletedFalseOrderByNameAsc();
@@ -33,6 +38,7 @@ public class CategoryService implements ICategoryService {
     }
 
     @Override
+    @Cacheable(value = "categories", key = "#id")
     public CategoryDTO getCategoryById(UUID id) {
         Category category = categoryRepository.findById(id)
                 .filter(cat -> !cat.isDeleted())
@@ -41,25 +47,29 @@ public class CategoryService implements ICategoryService {
     }
 
     @Override
+    @Transactional
+    @CacheEvict(value = "categories", allEntries = true)
     public CategoryDTO createCategory(CreateCategoryRequest request) {
         String trimmedName = request.getName().trim();
-        Category category = categoryRepository.findByName(trimmedName);
-        if (category != null) {
-            if (category.isDeleted()) {
-                category.setDeleted(false);
-                category = categoryRepository.save(category);
-                return convertToDto(category);
+
+        Category existingCategory = categoryRepository.findByNameIgnoreCase(trimmedName);
+
+        if (existingCategory != null) {
+            if (existingCategory.isDeleted()) {
+                existingCategory.setDeleted(false);
+                return convertToDto(categoryRepository.save(existingCategory));
             } else {
                 throw new AlreadyExistsException("Category '" + trimmedName + "' already exists.");
             }
         }
+
         Category newCategory = new Category(trimmedName);
-        newCategory = categoryRepository.save(newCategory);
-        return convertToDto(newCategory);
+        return convertToDto(categoryRepository.save(newCategory));
     }
 
     @Override
     @Transactional
+    @CacheEvict(value = "categories", allEntries = true)
     public CategoryDTO updateCategory(UUID id, UpdateCategoryRequest request) {
         Category existingCategory = categoryRepository.findById(id)
                 .filter(cat -> !cat.isDeleted())
@@ -80,16 +90,20 @@ public class CategoryService implements ICategoryService {
         existingCategory.setName(newName);
         log.info("Updated category with ID {}: new name {}", id, newName);
         existingCategory = categoryRepository.save(existingCategory);
+        productService.clearProductCache();
+        log.info("Category with ID {} updated and product cache cleared.", id);
         return convertToDto(existingCategory);
     }
 
     @Override
+    @CacheEvict(value = "categories", allEntries = true)
     public void deleteCategoryById(UUID id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found!"));
         category.setDeleted(true);
         categoryRepository.save(category);
-        log.info("Category with ID {} marked as deleted.", id);
+        productService.clearProductCache();
+        log.info("Category with ID {} marked as deleted and product cache cleared.", id);
     }
 
     private CategoryDTO convertToDto(Category category) {
