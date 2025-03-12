@@ -7,10 +7,7 @@ import com.example.electrical_preorder_system_backend.dto.request.ExchangeTokenR
 import com.example.electrical_preorder_system_backend.dto.request.UpdatePasswordRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UpdateUserRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UserSignUpRequest;
-import com.example.electrical_preorder_system_backend.dto.response.AuthenticationResponse;
-import com.example.electrical_preorder_system_backend.dto.response.DeviceTokenDTO;
-import com.example.electrical_preorder_system_backend.dto.response.OrderListDTO;
-import com.example.electrical_preorder_system_backend.dto.response.UserDTO;
+import com.example.electrical_preorder_system_backend.dto.response.*;
 import com.example.electrical_preorder_system_backend.entity.DeviceToken;
 import com.example.electrical_preorder_system_backend.entity.Order;
 import com.example.electrical_preorder_system_backend.entity.User;
@@ -297,8 +294,15 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public Page<User> getUsers(Pageable pageable) {
-        return userRepository.findAll(pageable);
+    public UserListDTO getUsers(Pageable pageable) {
+        Page<User> userPage =  userRepository.findAll(pageable);
+        return UserMapper.toUserListDTO(
+                userPage.getContent(),
+                userPage.getTotalPages(),
+                userPage.getTotalElements(),
+                userPage.getNumber(),
+                userPage.getSize()
+        );
     }
 
     private boolean isValidToUpdate(UUID id) {
