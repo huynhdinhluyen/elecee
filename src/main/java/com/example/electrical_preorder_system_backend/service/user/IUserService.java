@@ -3,10 +3,7 @@ package com.example.electrical_preorder_system_backend.service.user;
 import com.example.electrical_preorder_system_backend.dto.request.UpdatePasswordRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UpdateUserRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UserSignUpRequest;
-import com.example.electrical_preorder_system_backend.dto.response.AuthenticationResponse;
-import com.example.electrical_preorder_system_backend.dto.response.DeviceTokenDTO;
-import com.example.electrical_preorder_system_backend.dto.response.OrderListDTO;
-import com.example.electrical_preorder_system_backend.dto.response.UserDTO;
+import com.example.electrical_preorder_system_backend.dto.response.*;
 import com.example.electrical_preorder_system_backend.entity.User;
 import jakarta.mail.MessagingException;
 import org.springframework.data.domain.Page;
@@ -64,7 +61,7 @@ public interface IUserService {
      * @param pageable Pageable
      * @return Page of User
      */
-    Page<User> getUsers(Pageable pageable);
+    UserListDTO getUsers(Pageable pageable);
 
     /** Update password with current password and new password
      *
