@@ -19,7 +19,11 @@ import java.util.UUID;
 @Entity
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "\"campaign\"", indexes = {
-        @Index(name = "idx_campaign_product_id", columnList = "product_id")
+        @Index(name = "idx_campaign_name", columnList = "name"),
+        @Index(name = "idx_campaign_status", columnList = "status"),
+        @Index(name = "idx_campaign_product_id", columnList = "product_id"),
+        @Index(name = "idx_campaign_dates", columnList = "start_date, end_date"),
+        @Index(name = "idx_campaign_is_deleted", columnList = "is_deleted")
 })
 @DynamicUpdate
 @NoArgsConstructor

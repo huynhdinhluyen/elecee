@@ -1,5 +1,6 @@
 package com.example.electrical_preorder_system_backend.controller;
 
+import com.example.electrical_preorder_system_backend.dto.filter.CampaignFilterCriteria;
 import com.example.electrical_preorder_system_backend.dto.request.CreateCampaignRequest;
 import com.example.electrical_preorder_system_backend.dto.request.CreateCampaignStageRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UpdateCampaignRequest;
@@ -9,6 +10,7 @@ import com.example.electrical_preorder_system_backend.dto.response.CampaignDTO;
 import com.example.electrical_preorder_system_backend.dto.response.StageHistoryDTO;
 import com.example.electrical_preorder_system_backend.entity.Campaign;
 import com.example.electrical_preorder_system_backend.entity.CampaignStage;
+import com.example.electrical_preorder_system_backend.enums.CampaignStatus;
 import com.example.electrical_preorder_system_backend.service.campaign.ICampaignService;
 import com.example.electrical_preorder_system_backend.service.campaign_stage.ICampaignStageService;
 import com.example.electrical_preorder_system_backend.service.stage_history.ICampaignHistoryService;
@@ -21,11 +23,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -41,14 +46,57 @@ public class CampaignController {
 
     @Operation(
             summary = "Get all campaigns",
-            description = "Returns a paginated list of active (non-deleted) campaigns"
+            description = "Returns a paginated list of active (non-deleted) campaigns with search and sorting"
     )
     @GetMapping
     public ResponseEntity<ApiResponse> getCampaigns(
-            @Parameter(description = "Page number (zero-based)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Number of items per page") @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<CampaignDTO> campaignPage = campaignService.getConvertedCampaigns(pageable);
+            @Parameter(description = "Filter by campaign name")
+            @RequestParam(required = false) String name,
+
+            @Parameter(description = "Filter by campaign status (SCHEDULED, ACTIVE, COMPLETED, CANCELLED)")
+            @RequestParam(required = false) CampaignStatus status,
+
+            @Parameter(description = "Filter by product ID")
+            @RequestParam(required = false) UUID productId,
+
+            @Parameter(description = "Filter by start date (from)")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDateFrom,
+
+            @Parameter(description = "Filter by start date (to)")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDateTo,
+
+            @Parameter(description = "Filter by end date (from)")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDateFrom,
+
+            @Parameter(description = "Filter by end date (to)")
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDateTo,
+
+            @Parameter(description = "Page number (zero-based)")
+            @RequestParam(defaultValue = "0") int page,
+
+            @Parameter(description = "Number of items per page")
+            @RequestParam(defaultValue = "10") int size,
+
+            @Parameter(description = "Sort field (name, startDate, endDate, status)")
+            @RequestParam(defaultValue = "startDate") String sort,
+
+            @Parameter(description = "Sort direction (asc, desc)")
+            @RequestParam(defaultValue = "desc") String direction) {
+
+        Sort.Direction sortDirection = direction.equalsIgnoreCase("asc") ?
+                Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
+
+        CampaignFilterCriteria criteria = new CampaignFilterCriteria();
+        criteria.setName(name);
+        criteria.setStatus(status);
+        criteria.setProductId(productId);
+        criteria.setStartDateFrom(startDateFrom);
+        criteria.setStartDateTo(startDateTo);
+        criteria.setEndDateFrom(endDateFrom);
+        criteria.setEndDateTo(endDateTo);
+
+        Page<CampaignDTO> campaignPage = campaignService.getFilteredCampaigns(criteria, pageable);
         return ResponseEntity.ok(new ApiResponse("Campaigns retrieved successfully", campaignPage));
     }
 
@@ -60,8 +108,8 @@ public class CampaignController {
     public ResponseEntity<ApiResponse> getCampaignById(
             @Parameter(description = "Campaign UUID", required = true) @PathVariable UUID id
     ) {
-        Campaign campaign = campaignService.getCampaignById(id);
-        return ResponseEntity.ok(new ApiResponse("Campaign retrieved successfully", campaignService.convertToDto(campaign)));
+        CampaignDTO campaign = campaignService.getCampaignById(id);
+        return ResponseEntity.ok(new ApiResponse("Campaign retrieved successfully", campaign));
     }
 
     @Operation(

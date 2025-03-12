@@ -6,6 +6,7 @@ import com.example.electrical_preorder_system_backend.dto.response.CategoryDTO;
 import com.example.electrical_preorder_system_backend.entity.Category;
 import com.example.electrical_preorder_system_backend.exception.AlreadyExistsException;
 import com.example.electrical_preorder_system_backend.exception.ResourceNotFoundException;
+import com.example.electrical_preorder_system_backend.mapper.CategoryMapper;
 import com.example.electrical_preorder_system_backend.repository.CategoryRepository;
 import com.example.electrical_preorder_system_backend.service.product.IProductService;
 import lombok.RequiredArgsConstructor;
@@ -53,12 +54,14 @@ public class CategoryService implements ICategoryService {
     }
 
     @Override
-    @Cacheable(value = "categories", key = "#id")
+    @Cacheable(value = "categories", key = "'category-' + #id")
     public CategoryDTO getCategoryById(UUID id) {
+        log.info("Fetching category from database with ID: {}", id);
         Category category = categoryRepository.findById(id)
                 .filter(cat -> !cat.isDeleted())
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found!"));
-        return convertToDto(category);
+
+        return CategoryMapper.toCategoryDTO(category);
     }
 
     @Override
