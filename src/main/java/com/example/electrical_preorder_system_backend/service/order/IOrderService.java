@@ -5,7 +5,9 @@ import com.example.electrical_preorder_system_backend.dto.request.UpdateOrderReq
 import com.example.electrical_preorder_system_backend.dto.response.OrderDTO;
 import com.example.electrical_preorder_system_backend.dto.response.OrderListDTO;
 import com.example.electrical_preorder_system_backend.entity.User;
+import org.springframework.web.bind.annotation.RequestParam;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public interface IOrderService {
@@ -27,8 +29,10 @@ public interface IOrderService {
      * @param size Page size
      * @return OrderListDTO
      */
-    OrderListDTO getOrders(String status, int page, int size);
-
+    OrderListDTO getOrders(int page, int size, String status, boolean isDeleted, String sortField, String sortDirection, LocalDateTime createdAtMin,
+                           LocalDateTime createdAtMax, UUID userId, UUID campaignId,
+                           LocalDateTime expectedDeliveryDateMin,
+                           LocalDateTime expectedDeliveryDateMax);
     /** Update order with user, orderId and updateOrderRequest
      * Now only update quantity
      * Available for owner and admin

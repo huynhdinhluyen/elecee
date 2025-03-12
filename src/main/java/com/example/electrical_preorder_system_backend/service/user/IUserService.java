@@ -3,15 +3,14 @@ package com.example.electrical_preorder_system_backend.service.user;
 import com.example.electrical_preorder_system_backend.dto.request.UpdatePasswordRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UpdateUserRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UserSignUpRequest;
-import com.example.electrical_preorder_system_backend.dto.response.AuthenticationResponse;
-import com.example.electrical_preorder_system_backend.dto.response.DeviceTokenDTO;
-import com.example.electrical_preorder_system_backend.dto.response.OrderListDTO;
-import com.example.electrical_preorder_system_backend.dto.response.UserDTO;
+import com.example.electrical_preorder_system_backend.dto.response.*;
 import com.example.electrical_preorder_system_backend.entity.User;
 import jakarta.mail.MessagingException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public interface IUserService {
@@ -44,7 +43,7 @@ public interface IUserService {
      * @param id UUID
      * @param updateUserRequest UpdateUserRequest
      */
-    void update(UUID id, UpdateUserRequest updateUserRequest);
+    void update(UUID id, UpdateUserRequest updateUserRequest, MultipartFile avatar);
 
     /** Delete user by id
      *
@@ -59,12 +58,14 @@ public interface IUserService {
      */
     UserDTO getById(UUID id);
 
-    /** Get all users with pageable, now available for admin only
+    /** Get all users with filter
      *
-     * @param pageable Pageable
-     * @return Page of User
+     * @return UserListDTO
      */
-    Page<User> getUsers(Pageable pageable);
+    UserListDTO getUsers(int page, int size, String role, String status,
+                         String search, Boolean isVerified, Boolean isDeleted,
+                         String sortField, String sortDirection, LocalDateTime createdAtMin,
+                         LocalDateTime createdAtMax, Boolean isOnline);
 
     /** Update password with current password and new password
      *

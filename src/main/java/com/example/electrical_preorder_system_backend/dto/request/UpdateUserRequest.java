@@ -2,6 +2,7 @@ package com.example.electrical_preorder_system_backend.dto.request;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.springframework.web.multipart.MultipartFile;
 
 @Data
 @Builder

@@ -16,7 +16,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import vn.payos.PayOS;
+import vn.payos.exception.PayOSException;
 import vn.payos.type.CheckoutResponseData;
 import vn.payos.type.ItemData;
 import vn.payos.type.PaymentData;
@@ -31,6 +33,8 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class PaymentService implements IPaymentService {
+
+    private static final int MAX_RETRY_CREATE_PAYMENT = 10;
 
     private static final Logger log = LoggerFactory.getLogger(PaymentService.class);
     @Value("${payos.payment.return-url}")
@@ -48,21 +52,16 @@ public class PaymentService implements IPaymentService {
     private final PaymentRepository paymentRepository;
 
     @Override
-    public CheckoutResponseData createPaymentLink(User user, CreatePaymentRequest request, Integer amount, Long paymentId) {
-
-        //Create Items
-        List<ItemData> items = new ArrayList<>();
-        for (UUID orderId : request.getOrderIds()) {
-            Order order = orderRepository.findById(orderId).orElseThrow(
-                    () -> new RuntimeException("Order " + orderId + " not found")
-            );
-            items.add(PaymentMapper.toItemData(order, order.getCampaign().getProduct()));
+    @Transactional
+    public CheckoutResponseData createPaymentLink(User user, List<ItemData> items , Integer amount, Payment payment, int retryCreatePayment) {
+        if(retryCreatePayment > MAX_RETRY_CREATE_PAYMENT){
+            throw new RuntimeException("Error while creating payment");
         }
-
-        long currentSeconds = (int) (System.currentTimeMillis()/1000);
-
-        PaymentData paymentData = PaymentData.builder()
-                    .orderCode(paymentId)
+        try {
+            long currentSeconds = (int) (System.currentTimeMillis()/1000);
+            long randomPaymentId = (long) (Math.random() * 1000000000);
+            PaymentData paymentData = PaymentData.builder()
+                    .orderCode(randomPaymentId)
                     .amount(amount)
                     .buyerEmail(user.getEmail())
                     .description(UUID.randomUUID().toString().substring(0, 24))
@@ -71,35 +70,45 @@ public class PaymentService implements IPaymentService {
                     .cancelUrl(DEFAULT_PAYMENT_CANCEL_URL)
                     .expiredAt(currentSeconds + DEFAULT_PAYMENT_EXPIRE_TIME)
                     .build();
-        try{
-            return payOS.createPaymentLink(paymentData);
+            CheckoutResponseData responseData =  payOS.createPaymentLink(paymentData);
+            payment.setId(responseData.getOrderCode());
+            Payment savedPayment =  paymentRepository.save(payment);
+            for(Order order : savedPayment.getOrders()){
+                order.getPayments().add(savedPayment);
+                orderRepository.save(order);
+            }
+            return responseData;
+        }catch (PayOSException e){
+            log.info("Error while creating payment link: ", e);
+            return createPaymentLink(user, items, amount, payment, retryCreatePayment + 1);
         }catch (Exception e){
-            log.info("Error while creating payment link:", e);
+            log.info("Error while creating payment link: ", e);
             throw new RuntimeException("Error while creating payment link");
         }
+
     }
 
     @Override
+    @Transactional
     public CheckoutResponseData createPaymentLink(User user, CreatePaymentRequest createPaymentRequest) {
-        try {
             Payment payment = new Payment();
             payment.setMethod(createPaymentRequest.getMethod());
             payment.setStatus(PaymentStatus.PENDING);
+            List<ItemData> items = new ArrayList<>();
             List<Order> orders = orderRepository.findAllById(createPaymentRequest.getOrderIds());
             for (Order order : orders) {
                 if (order.getStatus().equals(OrderStatus.PENDING)) {//Only pending orders can be paid
-                    payment.getOrders().add(order);
                     payment.setAmount(payment.getAmount().add(order.getTotalAmount()));
-                }else {
+                    items.add(PaymentMapper.toItemData(order, order.getCampaign().getProduct()));
+                } else {
                     throw new RuntimeException("Order " + order.getId() + " is not pending");
                 }
             }
-            Payment savedPayment = paymentRepository.save(payment);
-            return createPaymentLink(user, createPaymentRequest, payment.getAmount().intValue(), savedPayment.getId());
-        }catch (Exception e){
-            log.info("Error while creating payment:", e);
-            throw new RuntimeException("Error while creating payment");
-        }
+            if (payment.getOrders().isEmpty()) {
+                payment.setOrders(new ArrayList<>());
+            }
+            payment.setOrders(orders);
+           return createPaymentLink(user, items, payment.getAmount().intValue(),payment, 0);
     }
 
     @Override
@@ -145,6 +154,11 @@ public class PaymentService implements IPaymentService {
             if (paymentLinkData != null && !paymentLinkData.getStatus().equals(payment.getStatus().toString())) {
                 log.info("Payment link information: {}", paymentLinkData.getStatus());
                 payment.setStatus(PaymentStatus.valueOf(paymentLinkData.getStatus()));
+                List<Order> orders = payment.getOrders();
+                for (Order order : orders) {
+                    order.setStatus(OrderStatus.CONFIRMED);
+                    orderRepository.save(order);
+                }
                 return PaymentMapper.toPaymentDTO(paymentRepository.save(payment));
             }else {
                 return PaymentMapper.toPaymentDTO(payment);

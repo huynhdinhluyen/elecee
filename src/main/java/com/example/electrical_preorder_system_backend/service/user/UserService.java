@@ -7,10 +7,7 @@ import com.example.electrical_preorder_system_backend.dto.request.ExchangeTokenR
 import com.example.electrical_preorder_system_backend.dto.request.UpdatePasswordRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UpdateUserRequest;
 import com.example.electrical_preorder_system_backend.dto.request.UserSignUpRequest;
-import com.example.electrical_preorder_system_backend.dto.response.AuthenticationResponse;
-import com.example.electrical_preorder_system_backend.dto.response.DeviceTokenDTO;
-import com.example.electrical_preorder_system_backend.dto.response.OrderListDTO;
-import com.example.electrical_preorder_system_backend.dto.response.UserDTO;
+import com.example.electrical_preorder_system_backend.dto.response.*;
 import com.example.electrical_preorder_system_backend.entity.DeviceToken;
 import com.example.electrical_preorder_system_backend.entity.Order;
 import com.example.electrical_preorder_system_backend.entity.User;
@@ -22,6 +19,8 @@ import com.example.electrical_preorder_system_backend.mapper.UserMapper;
 import com.example.electrical_preorder_system_backend.repository.DeviceTokenRepository;
 import com.example.electrical_preorder_system_backend.repository.OrderRepository;
 import com.example.electrical_preorder_system_backend.repository.UserRepository;
+import com.example.electrical_preorder_system_backend.repository.specification.UserSpecification;
+import com.example.electrical_preorder_system_backend.service.cloudinary.CloudinaryService;
 import com.example.electrical_preorder_system_backend.service.email.EmailService;
 import com.example.electrical_preorder_system_backend.util.Validator;
 import lombok.RequiredArgsConstructor;
@@ -30,17 +29,21 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionSystemException;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Service
@@ -55,6 +58,7 @@ public class UserService implements IUserService {
     private final EmailService emailService;
     private final DeviceTokenRepository deviceTokenRepository;
     private final OrderRepository orderRepository;
+    private final CloudinaryService cloudinaryService;
 
     @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String clientId;
@@ -65,32 +69,41 @@ public class UserService implements IUserService {
 
     @Override
 
-    public UserDTO signUp(UserSignUpRequest userSignInRequest) {
-        if (userRepository.existsByUsername(userSignInRequest.getUsername())) {
-            throw new RuntimeException("SignUp failed: Username already exists");
-        } else if (userRepository.existsByEmail(userSignInRequest.getEmail())) {
-            throw new RuntimeException("SignUp failed: Email already exists");
-        } else if (userRepository.existsByPhoneNumber(userSignInRequest.getPhoneNumber())) {
-            throw new RuntimeException("SignUp failed: Phone number already exists");
+    public UserDTO signUp(UserSignUpRequest userSignUpRequest) {
+        String invalidRequestMessage = Validator.verifyUserSignUp(userSignUpRequest);
+        if (invalidRequestMessage != null) {
+            throw new IllegalArgumentException(invalidRequestMessage);
         }
-        String role = userSignInRequest.getRole();
-        if (!isValidRole(role) || !role.equals(UserRole.ROLE_STAFF.name())) {
+        if (Validator.isValidUserRole(userSignUpRequest.getRole().trim()) || !userSignUpRequest.getRole().trim().equals(UserRole.ROLE_STAFF.name())) {
             throw new RuntimeException("SignUp failed: Invalid role");
+        }
+        if (userRepository.existsByUsername(userSignUpRequest.getUsername())) {
+            throw new RuntimeException("SignUp failed: Username already exists");
+        } else if (userRepository.existsByEmail(userSignUpRequest.getEmail())) {
+            throw new RuntimeException("SignUp failed: Email already exists");
+        } else if (userRepository.existsByPhoneNumber(userSignUpRequest.getPhoneNumber())) {
+            throw new RuntimeException("SignUp failed: Phone number already exists");
         }
         try {
             User user = User.builder()
-                    .username(userSignInRequest.getUsername())
-                    .password(passwordEncoder.encode(userSignInRequest.getPassword()))
-                    .fullname(userSignInRequest.getFullname())
-                    .email(userSignInRequest.getEmail())
-                    .phoneNumber(userSignInRequest.getPhoneNumber())
-                    .role(UserRole.valueOf(role))
+                    .username(userSignUpRequest.getUsername())
+                    .password(passwordEncoder.encode(userSignUpRequest.getPassword()))
+                    .fullname(userSignUpRequest.getFullname())
+                    .email(userSignUpRequest.getEmail())
+                    .phoneNumber(userSignUpRequest.getPhoneNumber())
+                    .role(UserRole.valueOf(userSignUpRequest.getRole().trim()))
                     .isVerified(false)
-                    .address(userSignInRequest.getAddress())
-                    .status(userSignInRequest.isActive() ? UserStatus.ACTIVE : UserStatus.INACTIVE)
+                    .address(userSignUpRequest.getAddress())
+                    .status(userSignUpRequest.isActive() ? UserStatus.ACTIVE : UserStatus.INACTIVE)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();
+            // Upload avatar
+            if (userSignUpRequest.getAvatar() != null) {
+                CompletableFuture<String> avatar = cloudinaryService.uploadFileAsync(userSignUpRequest.getAvatar());
+                user.setAvatar(avatar.join());
+            }
+
             // Send email verification
             emailService.sendEmail(user.getEmail(),
                     "Email verification",
@@ -127,6 +140,7 @@ public class UserService implements IUserService {
                 user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
                 user.setFullname(userInfo.getName());
                 user.setEmail(userInfo.getEmail());
+                user.setAvatar(userInfo.getPicture());
                 user.setPhoneNumber("");
                 user.setRole(UserRole.ROLE_CUSTOMER);
                 user.setVerified(true);
@@ -139,18 +153,9 @@ public class UserService implements IUserService {
             userRepository.save(user);
             return new AuthenticationResponse(token);
         } catch (Exception e) {
-            e.printStackTrace();
+//            e.printStackTrace();
             throw new RuntimeException("Google login failed", e);
         }
-    }
-
-    private boolean isValidRole(String role) {
-        for (UserRole userRole : UserRole.values()) {
-            if (userRole.name().equals(role)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     @Override
@@ -169,19 +174,19 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public void update(UUID id, UpdateUserRequest updateUserRequest) {
+    public void update(UUID id, UpdateUserRequest updateUserRequest, MultipartFile avatar) {
         if (isValidToUpdate(id)) {
             throw new AuthorizationDeniedException("Access denied");
         }
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        if (user.getStatus().equals(UserStatus.INACTIVE)) {
-            throw new IllegalArgumentException("User is inactive, cannot update");
-        }
-        if (user.getStatus().equals(UserStatus.BANNED)) {
-            throw new IllegalArgumentException("User is banned, cannot update");
+        User user = userRepository.getReferenceById(id);
+        String error = Validator.verifyUserUpdate(user, updateUserRequest);
+        if (error != null) {
+            throw new IllegalArgumentException(error);
         }
         updateBasicInfo(user, updateUserRequest);
+        if (avatar != null) {
+            updateAvatar(user, avatar);
+        }
         userRepository.save(user);
     }
 
@@ -203,7 +208,8 @@ public class UserService implements IUserService {
             }
         }
         if (updateUserRequest.getPhoneNumber() != null && !updateUserRequest.getPhoneNumber().isEmpty()) {
-            if (userRepository.existsByPhoneNumber(updateUserRequest.getPhoneNumber())) {
+            User userByPhoneNumber = userRepository.findByPhoneNumber(updateUserRequest.getPhoneNumber());
+            if (userByPhoneNumber != null && !userByPhoneNumber.getId().equals(user.getId())) {
                 throw new IllegalArgumentException("Phone number already exists");
             }
             if (Validator.isValidPhoneNumber(updateUserRequest.getPhoneNumber())) {
@@ -211,6 +217,22 @@ public class UserService implements IUserService {
                 user.setPhoneNumber(updateUserRequest.getPhoneNumber());
             } else {
                 throw new IllegalArgumentException("Invalid phone number");
+            }
+        }
+    }
+
+    private void updateAvatar(User user, MultipartFile avatar) {
+        if (avatar != null) {
+            String oldAvatar = user.getAvatar();
+            try {
+                CompletableFuture<String> newAvatar = cloudinaryService.uploadFileAsync(avatar);
+                user.setAvatar(newAvatar.join());
+                if (oldAvatar != null && !oldAvatar.isEmpty()) {
+                    cloudinaryService.deleteImageAsync(oldAvatar);
+                }
+            } catch (Exception e) {
+                log.error("Error updating avatar", e);
+                throw new RuntimeException("Error updating avatar");
             }
         }
     }
@@ -227,7 +249,7 @@ public class UserService implements IUserService {
             if (!passwordEncoder.matches(updatePasswordRequest.getCurrentPassword(), user.getPassword())) {
                 throw new IllegalArgumentException("Invalid current password");
             }
-            if (!Validator.isValidPassword(updatePasswordRequest.getNewPassword())) {
+            if (Validator.isValidPassword(updatePasswordRequest.getNewPassword())) {
                 throw new IllegalArgumentException("Invalid new password");
             }
             user.setPassword(passwordEncoder.encode(updatePasswordRequest.getNewPassword()));
@@ -282,7 +304,7 @@ public class UserService implements IUserService {
         if (username.equals(user.getUsername())) {
             throw new RuntimeException("Cannot delete yourself");
         }
-        user.setStatus(UserStatus.INACTIVE);
+        user.setDeleted(true);
         userRepository.save(user);
     }
 
@@ -297,8 +319,42 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public Page<User> getUsers(Pageable pageable) {
-        return userRepository.findAll(pageable);
+    public UserListDTO getUsers(int page, int size, String role, String status,
+                                String search, Boolean isVerified, Boolean isDeleted,
+                                String sortField, String sortDirection, LocalDateTime createdAtMin,
+                                LocalDateTime createdAtMax, Boolean isOnline) {
+        String errorMessage = Validator.verifyUserFilter(page, size, role, status, sortField, sortDirection, User.class);
+        if (errorMessage != null) {
+            throw new IllegalArgumentException(errorMessage);
+        }
+
+        Specification<User> spec = Specification.where(
+                UserSpecification.hasRole(role)
+                        .and(UserSpecification.hasStatus(status))
+                        .and(UserSpecification.createdAtBetween(createdAtMin, createdAtMax))
+                        .and(UserSpecification.isDeleted(isDeleted))
+                        .and(UserSpecification.isVerified(isVerified))
+        );
+
+        if (search != null && !search.isEmpty()) {
+            spec = spec.and(UserSpecification.search(search));
+        }
+        if (isOnline) {
+            spec = spec.and(UserSpecification.hasNonExpiredToken());
+        }
+
+        Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortField);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<User> userPage = userRepository.findAll(spec, pageable);
+
+        return UserMapper.toUserListDTO(
+                userPage.getContent(),
+                userPage.getTotalPages(),
+                userPage.getTotalElements(),
+                userPage.getNumber(),
+                userPage.getSize()
+        );
+
     }
 
     private boolean isValidToUpdate(UUID id) {
@@ -306,7 +362,7 @@ public class UserService implements IUserService {
         // Customer can only update their own password
         User authenticatedUser = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        return (authenticatedUser.getRole().equals(UserRole.ROLE_CUSTOMER) || authenticatedUser.getRole().equals(UserRole.ROLE_STAFF)) && !authenticatedUser.getId().equals(id);
+        return (authenticatedUser.getRole().equals(UserRole.ROLE_CUSTOMER) || authenticatedUser.getRole().equals(UserRole.ROLE_STAFF)) && authenticatedUser.getId().equals(id);
     }
 
     @Override
@@ -321,8 +377,10 @@ public class UserService implements IUserService {
         }else {
             orderPage = orderRepository.findAllByUserIdAndStatus(user.getId(), status, pageable);
         }
+        long totalAmount = orderPage.stream().mapToLong(order -> order.getTotalAmount().longValue()).sum();
         return OrderMapper.toOrderListDTO(
                 orderPage.getContent(),
+                totalAmount,
                 orderPage.getTotalPages(),
                 orderPage.getTotalElements(),
                 orderPage.getNumber(),

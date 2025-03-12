@@ -7,6 +7,7 @@ public enum PaymentStatus {
     PENDING("PENDING"),
     INVALID_PARAMS("01"),
     PAID("00"),
+    EXPIRED("EXPIRED"),
     CANCELLED("CANCELLED"),
     PROCESSING("PROCESSING "),
     FAILED("FAILED"),

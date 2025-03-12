@@ -17,4 +17,5 @@ public class GoogleUserResponse {
     String id;
     String email;
     String name;
+    String picture;
 }

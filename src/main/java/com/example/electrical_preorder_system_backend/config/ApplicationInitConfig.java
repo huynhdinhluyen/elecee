@@ -6,6 +6,7 @@ import com.example.electrical_preorder_system_backend.enums.UserStatus;
 import com.example.electrical_preorder_system_backend.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,26 +22,27 @@ public class ApplicationInitConfig {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Value("${default.admin.username}")
+    private String defaultAdminUsername;
+
+    @Value("${default.admin.password}")
+    private String defaultAdminPassword;
+
+    @Value("${default.admin.fullname}")
+    private String defaultAdminFullname;
+
     @Bean
     ApplicationRunner init() {
         return args -> {
-            if (userRepository.findByUsername("admin").isEmpty()) {
+            if (userRepository.findByUsername(defaultAdminUsername).isEmpty()) {
                 User user = new User();
-                user.setUsername("admin");
-                user.setFullname("Admin");
-                user.setPassword(passwordEncoder.encode("12345"));
+                user.setUsername(defaultAdminUsername);
+                user.setFullname(defaultAdminFullname);
+                user.setPassword(passwordEncoder.encode(defaultAdminPassword));
                 user.setVerified(true);
                 user.setStatus(UserStatus.ACTIVE);
                 user.setRole(UserRole.ROLE_ADMIN);
                 userRepository.save(user);
-                User staff = new User();
-                staff.setUsername("staff");
-                staff.setFullname("A Staff");
-                staff.setPassword(passwordEncoder.encode("12345"));
-                staff.setVerified(true);
-                staff.setStatus(UserStatus.ACTIVE);
-                staff.setRole(UserRole.ROLE_STAFF);
-                userRepository.save(staff);
                 log.info("User init");
             }
         };

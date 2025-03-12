@@ -285,7 +285,7 @@ public class ProductService implements IProductService {
 
                 // Delete from Cloudinary asynchronously
                 if (!imagesToDelete.isEmpty()) {
-                    deleteImagesFromCloudinary(imagesToDelete);
+                    cloudinaryService.deleteImagesFromCloudinary(imagesToDelete);
                 }
             }
 
@@ -321,7 +321,7 @@ public class ProductService implements IProductService {
                 .map(ImageProduct::getImageUrl)
                 .collect(Collectors.toList());
 
-        deleteImagesFromCloudinary(imageUrls);
+        cloudinaryService.deleteImagesFromCloudinary(imageUrls);
         product.setDeleted(true);
         productRepository.save(product);
         clearProductCache();
@@ -347,7 +347,7 @@ public class ProductService implements IProductService {
                 .map(ImageProduct::getImageUrl)
                 .collect(Collectors.toList());
 
-        deleteImagesFromCloudinary(allImageUrls);
+        cloudinaryService.deleteImagesFromCloudinary(allImageUrls);
 
         products.forEach(p -> p.setDeleted(true));
         productRepository.saveAll(products);
@@ -399,27 +399,6 @@ public class ProductService implements IProductService {
         dto.setImageProducts(imageDtos);
 
         return dto;
-    }
-
-    private void deleteImagesFromCloudinary(List<String> imageUrls) {
-        if (imageUrls == null || imageUrls.isEmpty()) return;
-
-        List<CompletableFuture<Boolean>> deleteFutures = imageUrls.stream()
-                .map(cloudinaryService::deleteImageAsync)
-                .toList();
-
-        CompletableFuture.allOf(deleteFutures.toArray(new CompletableFuture[0]))
-                .thenAccept(v -> {
-                    long successCount = deleteFutures.stream()
-                            .map(CompletableFuture::join)
-                            .filter(success -> success)
-                            .count();
-                    log.info("Deleted {}/{} images from Cloudinary", successCount, imageUrls.size());
-                })
-                .exceptionally(ex -> {
-                    log.error("Error deleting images from Cloudinary", ex);
-                    return null;
-                });
     }
 
     private String generateUniqueSlug(String name) {

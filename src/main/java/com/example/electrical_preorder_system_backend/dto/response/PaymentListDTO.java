@@ -7,8 +7,8 @@ import java.util.List;
 
 @Data
 @Builder
-public class OrderListDTO {
-    private List<OrderDTO> orders;
+public class PaymentListDTO {
+    private List<PaymentDTO> payments;
     private long totalAmount = 0L;
     private int totalPages;
     private long totalElements;

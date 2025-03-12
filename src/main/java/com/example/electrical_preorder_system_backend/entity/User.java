@@ -40,17 +40,15 @@ public class User {
     @Size(min = 3, max = 100)
     private String fullname;
 
-    @Column(nullable = true, unique = true)
+    @Column(unique = true)
     @Email
     private String email;
 
-    @Column(nullable = true, unique = true)
+    @Column(unique = true)
     private String googleAccountId;
 
-    @Column(nullable = true)
     private String phoneNumber;
 
-    @Column(nullable = true)
     private String password;
 
     @Enumerated(EnumType.STRING)
@@ -64,13 +62,17 @@ public class User {
     @Column(nullable = false)
     private boolean isVerified;
 
+    @Column(nullable = true)
+    private boolean isDeleted = false;
+
     @Column(length = 512)
     private String token;
 
     private LocalDateTime tokenExpires;
 
-    @Column(nullable = true)
     private String address;
+
+    private String avatar;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<Order> orders = new ArrayList<>();

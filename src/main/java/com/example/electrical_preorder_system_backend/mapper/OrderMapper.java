@@ -23,10 +23,11 @@ public class OrderMapper {
                 .build();
     }
 
-    public static OrderListDTO toOrderListDTO(List<Order> orders, int totalPages, long totalElements, int currentPage, int pageSize) {
+    public static OrderListDTO toOrderListDTO(List<Order> orders, long totalAmount, int totalPages, long totalElements, int currentPage, int pageSize) {
         return OrderListDTO.builder()
                 .orders(orders.stream().map(OrderMapper::toOrderDTO).collect(Collectors.toList()))
                 .totalPages(totalPages)
+                .totalAmount(totalAmount)
                 .totalElements(totalElements)
                 .currentPage(currentPage)
                 .pageSize(pageSize)

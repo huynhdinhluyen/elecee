@@ -25,7 +25,9 @@ public class UserDTO {
     UserStatus status;
     UserRole role;
     String address;
-    boolean isVerified = false;
+    boolean isVerified;
+    boolean isDeleted;
+    String avatar;
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
 }
