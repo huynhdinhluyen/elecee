@@ -10,6 +10,8 @@ import java.util.UUID;
 public interface ICategoryService {
     List<CategoryDTO> getAllCategories();
 
+    List<CategoryDTO> searchCategories(String searchTerm);
+
     CategoryDTO getCategoryById(UUID id);
 
     CategoryDTO createCategory(CreateCategoryRequest request);
