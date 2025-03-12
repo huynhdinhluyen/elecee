@@ -31,11 +31,21 @@ public class CategoryController {
 
     @Operation(
             summary = "Get all categories",
-            description = "Returns a list of all active (non-deleted) product categories"
+            description = "Returns a list of all active (non-deleted) product categories. Optionally filter by name."
     )
     @GetMapping
-    public ResponseEntity<ApiResponse> getAllCategories() {
-        List<CategoryDTO> categories = categoryService.getAllCategories();
+    public ResponseEntity<ApiResponse> getAllCategories(
+            @Parameter(description = "Optional search term to filter categories by name")
+            @RequestParam(required = false) String search
+    ) {
+        List<CategoryDTO> categories;
+
+        if (search != null && !search.trim().isEmpty()) {
+            categories = categoryService.searchCategories(search);
+        } else {
+            categories = categoryService.getAllCategories();
+        }
+
         return ResponseEntity.ok(new ApiResponse("Categories retrieved successfully", categories));
     }
 

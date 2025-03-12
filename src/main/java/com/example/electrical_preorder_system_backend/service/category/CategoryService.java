@@ -38,6 +38,21 @@ public class CategoryService implements ICategoryService {
     }
 
     @Override
+    @Cacheable(value = "categories", key = "'search_' + #searchTerm")
+    public List<CategoryDTO> searchCategories(String searchTerm) {
+        log.info("Searching categories with term: {}", searchTerm);
+
+        if (searchTerm == null || searchTerm.trim().isEmpty()) {
+            return getAllCategories();
+        }
+
+        List<Category> categories = categoryRepository.searchCategoriesByName(searchTerm.trim());
+        return categories.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     @Cacheable(value = "categories", key = "#id")
     public CategoryDTO getCategoryById(UUID id) {
         Category category = categoryRepository.findById(id)
