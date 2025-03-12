@@ -19,6 +19,5 @@ public class CampaignMapper {
         DTO.setCreatedAt(campaign.getCreatedAt());
         DTO.setUpdatedAt(campaign.getUpdatedAt());
         return DTO;
-
     }
 }
