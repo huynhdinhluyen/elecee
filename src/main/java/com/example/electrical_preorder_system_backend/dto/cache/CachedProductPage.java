@@ -21,7 +21,6 @@ public class CachedProductPage implements Serializable {
     private long totalElements;
     private int totalPages;
 
-    // Create from Page
     public static CachedProductPage from(Page<ProductDTO> page) {
         CachedProductPage cachedPage = new CachedProductPage();
         cachedPage.setContent(page.getContent());
@@ -32,7 +31,6 @@ public class CachedProductPage implements Serializable {
         return cachedPage;
     }
 
-    // Convert back to Page
     public Page<ProductDTO> toPage() {
         return new PageImpl<>(content, PageRequest.of(number, size), totalElements);
     }

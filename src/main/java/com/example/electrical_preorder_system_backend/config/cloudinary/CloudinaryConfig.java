@@ -1,4 +1,4 @@
-package com.example.electrical_preorder_system_backend.config;
+package com.example.electrical_preorder_system_backend.config.cloudinary;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
