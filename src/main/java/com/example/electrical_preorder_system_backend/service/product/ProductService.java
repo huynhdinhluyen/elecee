@@ -20,6 +20,7 @@ import com.example.electrical_preorder_system_backend.exception.AlreadyExistsExc
 import com.example.electrical_preorder_system_backend.exception.ResourceNotFoundException;
 import com.example.electrical_preorder_system_backend.repository.CampaignRepository;
 import com.example.electrical_preorder_system_backend.repository.CategoryRepository;
+import com.example.electrical_preorder_system_backend.repository.OrderRepository;
 import com.example.electrical_preorder_system_backend.repository.ProductRepository;
 import com.example.electrical_preorder_system_backend.repository.specification.ProductSpecifications;
 import com.example.electrical_preorder_system_backend.service.campaign_stage.ICampaignStageService;
@@ -48,10 +49,11 @@ import java.util.stream.Collectors;
 public class ProductService implements IProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
-    private final CloudinaryService cloudinaryService;
-    private final RedisTemplate<String, Object> redisTemplate;
     private final CampaignRepository campaignRepository;
+    private final OrderRepository orderRepository;
+    private final CloudinaryService cloudinaryService;
     private final ICampaignStageService campaignStageService;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public Page<ProductDTO> getProducts(ProductFilterCriteria criteria, Pageable pageable) {
@@ -377,6 +379,24 @@ public class ProductService implements IProductService {
     public void deleteProductById(UUID id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found!"));
+
+        // Check if product has active campaigns
+        List<Campaign> activeCampaigns = campaignRepository.findActiveCampaignsByProductId(product.getId())
+                .stream()
+                .filter(c -> !c.isDeleted() &&
+                        (c.getStatus() == CampaignStatus.ACTIVE || c.getStatus() == CampaignStatus.SCHEDULED))
+                .toList();
+
+        if (!activeCampaigns.isEmpty()) {
+            throw new IllegalStateException("Cannot delete product with active campaigns. Please cancel or complete all campaigns first.");
+        }
+
+        // Check if product has pending orders
+        long pendingOrdersCount = orderRepository.countPendingOrdersByProductId(product.getId());
+        if (pendingOrdersCount > 0) {
+            throw new IllegalStateException("Cannot delete product with pending orders. Please complete or cancel all orders first.");
+        }
+
         List<String> imageUrls = product.getImageProducts().stream()
                 .filter(img -> !img.isDeleted())
                 .map(ImageProduct::getImageUrl)
@@ -400,6 +420,29 @@ public class ProductService implements IProductService {
 
         if (products.size() != ids.size()) {
             throw new ResourceNotFoundException("Some products were not found or already deleted.");
+        }
+
+        List<Product> productsWithActiveCampaigns = products.stream()
+                .filter(product -> !campaignRepository.findActiveCampaignsByProductId(product.getId())
+                        .stream()
+                        .filter(c -> !c.isDeleted() &&
+                                (c.getStatus() == CampaignStatus.ACTIVE || c.getStatus() == CampaignStatus.SCHEDULED))
+                        .toList()
+                        .isEmpty())
+                .toList();
+
+        if (!productsWithActiveCampaigns.isEmpty()) {
+            throw new IllegalStateException("Cannot delete products with active campaigns: " +
+                    productsWithActiveCampaigns.stream().map(Product::getName).collect(Collectors.joining(", ")));
+        }
+
+        List<Product> productsWithPendingOrders = products.stream()
+                .filter(product -> orderRepository.countPendingOrdersByProductId(product.getId()) > 0)
+                .toList();
+
+        if (!productsWithPendingOrders.isEmpty()) {
+            throw new IllegalStateException("Cannot delete products with pending orders: " +
+                    productsWithPendingOrders.stream().map(Product::getName).collect(Collectors.joining(", ")));
         }
 
         List<String> allImageUrls = products.stream()

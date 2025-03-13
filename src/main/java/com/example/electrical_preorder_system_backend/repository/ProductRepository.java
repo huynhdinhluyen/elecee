@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.UUID;
@@ -40,4 +41,7 @@ public interface ProductRepository extends JpaRepository<Product, UUID>, JpaSpec
             "WHERE is_deleted = false AND slug = ?1",
             nativeQuery = true)
     Product findBySlug(String slug);
+
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.category.id = :categoryId AND p.isDeleted = false")
+    long countByCategoryIdAndIsDeletedFalse(@Param("categoryId") UUID categoryId);
 }
