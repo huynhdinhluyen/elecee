@@ -25,5 +25,5 @@ public interface ICampaignService {
 
     CampaignDTO convertToDto(Campaign campaign);
 
-    void clearCampaignCache();
+//    void clearCampaignCache();
 }
