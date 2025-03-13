@@ -26,64 +26,6 @@ jobs:
 
       - name: Build with Maven
         run: mvn clean install
-        env:
-          SPRING_APPLICATION_NAME: ${{ secrets.SPRING_APPLICATION_NAME }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
-          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
-          DATABASE_DRIVER_CLASS_NAME: ${{ secrets.DATABASE_DRIVER_CLASS_NAME }}
-          JPA_HIBERNATE_DDL_AUTO: ${{ secrets.JPA_HIBERNATE_DDL_AUTO }}
-          JPA_SHOW_SQL: ${{ secrets.JPA_SHOW_SQL }}
-          JPA_FORMAT_SQL: ${{ secrets.JPA_FORMAT_SQL }}
-          DATABASE_DIALECT: ${{ secrets.DATABASE_DIALECT }}
-          DEFAULT_ADMIN_USERNAME: ${{ secrets.DEFAULT_ADMIN_USERNAME }}
-          DEFAULT_ADMIN_PASSWORD: ${{ secrets.DEFAULT_ADMIN_PASSWORD }}
-          DEFAULT_ADMIN_FULLNAME: ${{ secrets.DEFAULT_ADMIN_FULLNAME }}
-          SERVER_PORT: ${{ secrets.SERVER_PORT }}
-          SERVER_COMPRESSION_ENABLED: ${{ secrets.SERVER_COMPRESSION_ENABLED }}
-          SERVER_COMPRESSION_MIME_TYPES: ${{ secrets.SERVER_COMPRESSION_MIME_TYPES }}
-          SERVER_COMPRESSION_MIN_RESPONSE_SIZE: ${{ secrets.SERVER_COMPRESSION_MIN_RESPONSE_SIZE }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          JWT_EXPIRATION: ${{ secrets.JWT_EXPIRATION }}
-          API_PREFIX: ${{ secrets.API_PREFIX }}
-          REDIS_HOST: ${{ secrets.REDIS_HOST }}
-          REDIS_PORT: ${{ secrets.REDIS_PORT }}
-          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
-          SPRING_CACHE_TYPE: ${{ secrets.SPRING_CACHE_TYPE }}
-          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
-          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
-          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
-          SWAGGER_UI_ENABLED: ${{ secrets.SWAGGER_UI_ENABLED }}
-          SWAGGER_UI_PATH: ${{ secrets.SWAGGER_UI_PATH }}
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          GOOGLE_REDIRECT_URI: ${{ secrets.GOOGLE_REDIRECT_URI }}
-          GOOGLE_USER_INFO_URI: ${{ secrets.GOOGLE_USER_INFO_URI }}
-          MAIL_HOST: ${{ secrets.MAIL_HOST }}
-          MAIL_PORT: ${{ secrets.MAIL_PORT }}
-          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
-          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
-          MAIL_PROPERTIES_MAIL_SMTP_AUTH: ${{ secrets.MAIL_PROPERTIES_MAIL_SMTP_AUTH }}
-          MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: ${{ secrets.MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE }}
-          MAIL_PROPERTIES_MAIL_TRANSPORT_PROTOCOL: ${{ secrets.MAIL_PROPERTIES_MAIL_TRANSPORT_PROTOCOL }}
-          MULTIPART_FILE_SIZE: ${{ secrets.MULTIPART_FILE_SIZE }}
-          MULTIPART_MAX_FILE_SIZE: ${{ secrets.MULTIPART_MAX_FILE_SIZE }}
-          MULTIPART_MAX_REQUEST_SIZE: ${{ secrets.MULTIPART_MAX_REQUEST_SIZE }}
-          DEV_CLIENT_DOMAIN: ${{ secrets.DEV_CLIENT_DOMAIN }}
-          FIREBASE_GOOGLE_CREDENTIALS: ${{ secrets.FIREBASE_GOOGLE_CREDENTIALS }}
-          RABBITMQ_ADDRESSES: ${{ secrets.RABBITMQ_ADDRESSES }}
-          KAFKA_BOOTSTRAP_SERVERS: ${{ secrets.KAFKA_BOOTSTRAP_SERVERS }}
-          KAFKA_GROUP_ID: ${{ secrets.KAFKA_GROUP_ID }}
-          KAFKA_AUTO_OFFSET_RESET: ${{ secrets.KAFKA_AUTO_OFFSET_RESET }}
-          KAFKA_KEY_SERIALIZER: ${{ secrets.KAFKA_KEY_SERIALIZER }}
-          KAFKA_VALUE_SERIALIZER: ${{ secrets.KAFKA_VALUE_SERIALIZER }}
-          KAFKA_KEY_DESERIALIZER: ${{ secrets.KAFKA_KEY_DESERIALIZER }}
-          PAYOS_CLIENT_ID: ${{ secrets.PAYOS_CLIENT_ID }}
-          PAYOS_API_KEY: ${{ secrets.PAYOS_API_KEY }}
-          PAYOS_CHECKSUM_KEY: ${{ secrets.PAYOS_CHECKSUM_KEY }}
-          PAYOS_PAYMENT_RETURN_URL: ${{ secrets.PAYOS_PAYMENT_RETURN_URL }}
-          PAYOS_PAYMENT_CANCEL_URL: ${{ secrets.PAYOS_PAYMENT_CANCEL_URL }}
-          PAYOS_PAYMENT_EXPIRE_TIME: ${{ secrets.PAYOS_PAYMENT_EXPIRE_TIME }}
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -97,24 +39,13 @@ jobs:
     environment:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-
-    permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
-  
+      
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: java-app
       
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_1E2DDEBEBFA340DB8796EB232CFA3D20 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_28C34DD5C6FB4FD5A8E86644B3492EE8 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_01C3BFD56879438DBEE7B8CA7201E6CB }}
-
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
@@ -122,4 +53,4 @@ jobs:
           app-name: 'elecee'
           slot-name: 'Production'
           package: '*.jar'
-          
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_2EE84496A3D146ACBF3B5B34C6700ED8 }}
