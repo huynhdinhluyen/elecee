@@ -42,7 +42,7 @@ public class Notification {
     private HashMap<String, String> data;
 
     @Column(nullable = false)
-    boolean isRead = false;
+    private boolean isRead = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

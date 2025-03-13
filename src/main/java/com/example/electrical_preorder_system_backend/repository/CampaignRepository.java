@@ -1,9 +1,8 @@
 package com.example.electrical_preorder_system_backend.repository;
 
 import com.example.electrical_preorder_system_backend.entity.Campaign;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -11,10 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface CampaignRepository extends JpaRepository<Campaign, UUID> {
-    Page<Campaign> findByIsDeletedFalse(Pageable pageable);
-
-    boolean existsByName(String name);
+public interface CampaignRepository extends JpaRepository<Campaign, UUID>, JpaSpecificationExecutor<Campaign> {
 
     @Query(value = "SELECT * " +
             "FROM campaign " +
@@ -26,6 +22,9 @@ public interface CampaignRepository extends JpaRepository<Campaign, UUID> {
             "FROM campaign " +
             "WHERE is_deleted = false AND id = ?1 ", nativeQuery = true)
     Campaign findActiveCampaignById(UUID id);
+
+    @Query(value = "SELECT * FROM campaign WHERE is_deleted = false AND product_id = ?1", nativeQuery = true)
+    List<Campaign> findActiveCampaignsByProductId(UUID productId);
 
     Campaign findByName(String name);
 }

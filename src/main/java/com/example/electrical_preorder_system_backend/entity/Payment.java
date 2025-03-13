@@ -13,12 +13,13 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "\"payment\"", indexes = {
-        @Index(name = "idx_order_id", columnList = "order_id"),
         @Index(name = "idx_payment_date", columnList = "date")
 })
 @NoArgsConstructor
@@ -27,13 +28,12 @@ import java.util.UUID;
 @Setter
 public class Payment {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(nullable = false)
-    private BigDecimal amount;
+    private BigDecimal amount = BigDecimal.ZERO;
 
-    @Column(nullable = false)
     private LocalDateTime date;
 
     @Enumerated(EnumType.STRING)
@@ -44,9 +44,8 @@ public class Payment {
     @Column(nullable = false)
     private PaymentStatus status;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id", nullable = false)
-    private Order order;
+    @ManyToMany(mappedBy = "payments", fetch = FetchType.LAZY)
+    private List<Order> orders = new ArrayList<>();
 
     @CreatedDate
     @Column(nullable = false, updatable = false)

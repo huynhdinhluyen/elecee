@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class UpdateNotificationRequest {
-    boolean isRead;
+    private boolean isRead;
 }

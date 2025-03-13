@@ -1,7 +1,10 @@
 package com.example.electrical_preorder_system_backend.mapper;
 
 import com.example.electrical_preorder_system_backend.dto.response.UserDTO;
+import com.example.electrical_preorder_system_backend.dto.response.UserListDTO;
 import com.example.electrical_preorder_system_backend.entity.User;
+
+import java.util.List;
 
 public class UserMapper {
 
@@ -18,6 +21,16 @@ public class UserMapper {
                 .isVerified(user.isVerified())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
+                .build();
+    }
+
+    public static UserListDTO toUserListDTO(List<User> users, int totalPages, long totalElements, int currentPage, int pageSize) {
+        return UserListDTO.builder()
+                .users(users.stream().map(UserMapper::toUserDTO).toList())
+                .totalPages(totalPages)
+                .totalElements(totalElements)
+                .currentPage(currentPage)
+                .pageSize(pageSize)
                 .build();
     }
 

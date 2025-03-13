@@ -1,30 +1,36 @@
 package com.example.electrical_preorder_system_backend.service.campaign;
 
-import com.example.electrical_preorder_system_backend.dto.request.CreateCampaignRequest;
-import com.example.electrical_preorder_system_backend.dto.request.UpdateCampaignRequest;
-import com.example.electrical_preorder_system_backend.dto.response.CampaignDTO;
-import com.example.electrical_preorder_system_backend.dto.response.ProductDTO;
+import com.example.electrical_preorder_system_backend.dto.cache.CachedCampaignPage;
+import com.example.electrical_preorder_system_backend.dto.filter.CampaignFilterCriteria;
+import com.example.electrical_preorder_system_backend.dto.request.campaign.CreateCampaignRequest;
+import com.example.electrical_preorder_system_backend.dto.request.campaign.UpdateCampaignRequest;
+import com.example.electrical_preorder_system_backend.dto.response.campaign.CampaignDTO;
 import com.example.electrical_preorder_system_backend.entity.Campaign;
 import com.example.electrical_preorder_system_backend.entity.Product;
 import com.example.electrical_preorder_system_backend.enums.CampaignStatus;
 import com.example.electrical_preorder_system_backend.exception.AlreadyExistsException;
 import com.example.electrical_preorder_system_backend.exception.CampaignStatusException;
 import com.example.electrical_preorder_system_backend.exception.ResourceNotFoundException;
+import com.example.electrical_preorder_system_backend.mapper.CampaignMapper;
 import com.example.electrical_preorder_system_backend.repository.CampaignRepository;
 import com.example.electrical_preorder_system_backend.repository.ProductRepository;
-import com.example.electrical_preorder_system_backend.service.product.ProductService;
+import com.example.electrical_preorder_system_backend.repository.specification.CampaignSpecifications;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -33,26 +39,139 @@ public class CampaignService implements ICampaignService {
 
     private final CampaignRepository campaignRepository;
     private final ProductRepository productRepository;
-    private final ProductService productService;
+    private final RedisTemplate<String, Object> redisTemplate;
+
+    @Override
+    public Page<CampaignDTO> getFilteredCampaigns(CampaignFilterCriteria criteria, Pageable pageable) {
+        log.info("Searching campaigns with filters: name={}, status={}, productId={}",
+                criteria.getName(), criteria.getStatus(), criteria.getProductId());
+
+        String cacheKey = generateCacheKey(criteria, pageable);
+
+        CachedCampaignPage cachedResult = getCachedCampaignPage(cacheKey);
+        if (cachedResult != null) {
+            log.info("Cache hit for campaigns with key: {}", cacheKey);
+            return cachedResult.toPage();
+        }
+
+        log.info("Cache miss for campaigns, fetching from database");
+        Specification<Campaign> spec = Specification.where(CampaignSpecifications.isNotDeleted());
+
+        if (criteria.getName() != null && !criteria.getName().trim().isEmpty()) {
+            spec = spec.and(CampaignSpecifications.nameLike(criteria.getName()));
+        }
+
+        if (criteria.getStatus() != null) {
+            spec = spec.and(CampaignSpecifications.hasStatus(criteria.getStatus()));
+        }
+
+        if (criteria.getProductId() != null) {
+            spec = spec.and(CampaignSpecifications.hasProductId(criteria.getProductId()));
+        }
+
+        if (criteria.getStartDateFrom() != null) {
+            spec = spec.and(CampaignSpecifications.startDateAfterOrEqual(criteria.getStartDateFrom()));
+        }
+
+        if (criteria.getStartDateTo() != null) {
+            spec = spec.and(CampaignSpecifications.startDateBeforeOrEqual(criteria.getStartDateTo()));
+        }
+
+        if (criteria.getEndDateFrom() != null) {
+            spec = spec.and(CampaignSpecifications.endDateAfterOrEqual(criteria.getEndDateFrom()));
+        }
+
+        if (criteria.getEndDateTo() != null) {
+            spec = spec.and(CampaignSpecifications.endDateBeforeOrEqual(criteria.getEndDateTo()));
+        }
+
+        Page<CampaignDTO> resultPage = campaignRepository.findAll(spec, pageable)
+                .map(CampaignMapper::toCampaignDTO);
+
+        cacheCampaignPage(cacheKey, resultPage);
+
+        return resultPage;
+    }
+
+    private String generateCacheKey(CampaignFilterCriteria criteria, Pageable pageable) {
+        return "campaigns-filtered-" +
+                (criteria.getName() != null ? criteria.getName() : "") + "-" +
+                (criteria.getStatus() != null ? criteria.getStatus() : "") + "-" +
+                (criteria.getProductId() != null ? criteria.getProductId() : "") + "-" +
+                (criteria.getStartDateFrom() != null ? criteria.getStartDateFrom() : "") + "-" +
+                (criteria.getStartDateTo() != null ? criteria.getStartDateTo() : "") + "-" +
+                (criteria.getEndDateFrom() != null ? criteria.getEndDateFrom() : "") + "-" +
+                (criteria.getEndDateTo() != null ? criteria.getEndDateTo() : "") + "-" +
+                pageable.getPageNumber() + "-" +
+                pageable.getPageSize() + "-" +
+                pageable.getSort().toString();
+    }
+
+    private CachedCampaignPage getCachedCampaignPage(String key) {
+        try {
+            Object value = redisTemplate.opsForValue().get(key);
+            if (value instanceof CachedCampaignPage) {
+                return (CachedCampaignPage) value;
+            }
+        } catch (Exception e) {
+            log.error("Error retrieving cached campaign page: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    private void cacheCampaignPage(String key, Page<CampaignDTO> page) {
+        try {
+            CachedCampaignPage cachedPage = CachedCampaignPage.from(page);
+            redisTemplate.opsForValue().set(key, cachedPage, 60, TimeUnit.MINUTES);
+            log.info("Cached campaign page with key: {}", key);
+        } catch (Exception e) {
+            log.error("Error caching campaign page: {}", e.getMessage());
+        }
+    }
+
+    @Override
+    @Cacheable(value = "campaigns", key = "'campaign-' + #id")
+    public CampaignDTO getCampaignById(UUID id) {
+        log.info("Fetching campaign from database with ID: {}", id);
+        Campaign campaign = campaignRepository.findById(id)
+                .filter(c -> !c.isDeleted())
+                .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with id: " + id));
+
+        return CampaignMapper.toCampaignDTO(campaign);
+    }
+
+//    @Override
+//    public Map<String, Object> getCampaignPerformanceMetrics(UUID campaignId) {
+//        Campaign campaign = getCampaignById(campaignId);
+//        List<CampaignStage> stages = getCampaignStagesByCampaignId(campaignId);
+//
+//        int totalSold = stages.stream().mapToInt(CampaignStage::getQuantitySold).sum();
+//        double progressPercentage = campaign.getMaxQuantity() > 0 ?
+//                (totalSold * 100.0 / campaign.getMaxQuantity()) : 0;
+//
+//        Map<String, Object> metrics = new HashMap<>();
+//        metrics.put("totalSold", totalSold);
+//        metrics.put("totalTarget", campaign.getMaxQuantity());
+//        metrics.put("progressPercentage", progressPercentage);
+//        metrics.put("activeStages", stages.stream()
+//                .filter(s -> s.getStatus() == CampaignStageStatus.ACTIVE)
+//                .count());
+//
+//        return metrics;
+//    }
 
     @Override
     @Transactional
-    @CacheEvict(value = "campaigns", allEntries = true)
+    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
     public Campaign createCampaign(CreateCampaignRequest request) {
         String campaignName = request.getName().trim();
         Campaign oldCampaign = campaignRepository.findByName(campaignName);
         if (oldCampaign != null && !oldCampaign.isDeleted()) {
             throw new AlreadyExistsException("Campaign with name '" + campaignName + "' already exists.");
         }
-        LocalDateTime now = LocalDateTime.now();
         LocalDateTime startDate = request.getStartDate();
         LocalDateTime endDate = request.getEndDate();
-        if (startDate.isBefore(now)) {
-            throw new IllegalArgumentException("Campaign start date cannot be in the past.");
-        }
-        if (!startDate.isBefore(endDate)) {
-            throw new IllegalArgumentException("Campaign start date must be before the end date.");
-        }
+        validateCampaignDates(startDate, endDate);
 
         Campaign newCampaign = new Campaign();
         newCampaign.setName(campaignName);
@@ -60,7 +179,7 @@ public class CampaignService implements ICampaignService {
         newCampaign.setEndDate(endDate);
         newCampaign.setMinQuantity(request.getMinQuantity());
         newCampaign.setMaxQuantity(request.getMaxQuantity());
-        newCampaign.setTotalAmount(request.getTotalAmount());
+        newCampaign.setTotalAmount(BigDecimal.valueOf(0));
         newCampaign.setStatus(determineCampaignStatus(startDate, endDate));
 
         UUID productId = UUID.fromString(request.getProductId().trim());
@@ -70,25 +189,13 @@ public class CampaignService implements ICampaignService {
 
         newCampaign = campaignRepository.save(newCampaign);
         log.info("Campaign created with id {}", newCampaign.getId());
+        clearCampaignCache();
         return newCampaign;
     }
 
     @Override
-    @Cacheable(value = "campaigns", key = "#pageable.pageNumber + '-' + #pageable.pageSize")
-    public Page<Campaign> getCampaigns(Pageable pageable) {
-        return campaignRepository.findByIsDeletedFalse(pageable);
-    }
-
-    @Override
-    public Campaign getCampaignById(UUID id) {
-        return campaignRepository.findById(id)
-                .filter(c -> !c.isDeleted())
-                .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with id: " + id));
-    }
-
-    @Override
     @Transactional
-    @CacheEvict(value = "campaigns", allEntries = true)
+    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
     public Campaign updateCampaign(UUID id, UpdateCampaignRequest request) {
         Campaign campaign = campaignRepository.findById(id)
                 .filter(c -> !c.isDeleted())
@@ -102,16 +209,11 @@ public class CampaignService implements ICampaignService {
             }
             campaign.setName(campaignName);
         }
-        LocalDateTime now = LocalDateTime.now();
+
         LocalDateTime startDate = request.getStartDate();
         LocalDateTime endDate = request.getEndDate();
         if (startDate != null && endDate != null) {
-            if (startDate.isBefore(now)) {
-                throw new IllegalArgumentException("Campaign start date cannot be in the past.");
-            }
-            if (!startDate.isBefore(endDate)) {
-                throw new IllegalArgumentException("Campaign start date must be before the end date.");
-            }
+            validateCampaignDates(startDate, endDate);
             campaign.setStartDate(startDate);
             campaign.setEndDate(endDate);
             campaign.setStatus(determineCampaignStatus(startDate, endDate));
@@ -140,18 +242,20 @@ public class CampaignService implements ICampaignService {
 
         campaign = campaignRepository.save(campaign);
         log.info("Campaign updated with id {}", campaign.getId());
+        clearCampaignCache();
         return campaign;
     }
 
     @Override
     @Transactional
-    @CacheEvict(value = "campaigns", allEntries = true)
+    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
     public void deleteCampaign(UUID id) {
         Campaign campaign = campaignRepository.findById(id)
                 .filter(c -> !c.isDeleted())
                 .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with id: " + id));
         campaign.setDeleted(true);
         campaignRepository.save(campaign);
+        clearCampaignCache();
         log.info("Campaign marked as deleted with id {}", id);
     }
 
@@ -168,6 +272,7 @@ public class CampaignService implements ICampaignService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
     public void updateCampaignStatuses() {
         List<Campaign> campaigns = campaignRepository.findActiveCampaigns();
         LocalDateTime now = LocalDateTime.now();
@@ -185,28 +290,30 @@ public class CampaignService implements ICampaignService {
             }
         }
         campaignRepository.saveAll(campaigns);
-    }
-
-    @Override
-    public Page<CampaignDTO> getConvertedCampaigns(Pageable pageable) {
-        return getCampaigns(pageable).map(this::convertToDto);
+        clearCampaignCache();
     }
 
     @Override
     public CampaignDTO convertToDto(Campaign campaign) {
-        CampaignDTO campaignDTO = new CampaignDTO();
-        ProductDTO productDTO = productService.convertToDto(campaign.getProduct());
-        campaignDTO.setId(campaign.getId());
-        campaignDTO.setName(campaign.getName());
-        campaignDTO.setStartDate(campaign.getStartDate());
-        campaignDTO.setEndDate(campaign.getEndDate());
-        campaignDTO.setMinQuantity(campaign.getMinQuantity());
-        campaignDTO.setMaxQuantity(campaign.getMaxQuantity());
-        campaignDTO.setTotalAmount(campaign.getTotalAmount());
-        campaignDTO.setStatus(campaign.getStatus());
-        campaignDTO.setProduct(productDTO);
-        campaignDTO.setCreatedAt(campaign.getCreatedAt());
-        campaignDTO.setUpdatedAt(campaign.getUpdatedAt());
-        return campaignDTO;
+        if (campaign == null) {
+            return null;
+        }
+        return CampaignMapper.toCampaignDTO(campaign);
+    }
+
+    @Override
+    @CacheEvict(value = "campaigns", allEntries = true)
+    public void clearCampaignCache() {
+        log.info("Cleared campaign cache");
+    }
+
+    private void validateCampaignDates(LocalDateTime startDate, LocalDateTime endDate) {
+        LocalDateTime now = LocalDateTime.now();
+        if (startDate.isBefore(now)) {
+            throw new IllegalArgumentException("Campaign start date cannot be in the past.");
+        }
+        if (!startDate.isBefore(endDate)) {
+            throw new IllegalArgumentException("Campaign start date must be before the end date.");
+        }
     }
 }

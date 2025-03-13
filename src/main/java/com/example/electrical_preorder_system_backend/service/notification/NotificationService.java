@@ -41,7 +41,7 @@ public class NotificationService implements INotificationService{
     @Transactional
     @RabbitListener(queues = RabbitMQConfig.NOTIFICATION_QUEUE)
     public void pushNotification(NotificationSendRequest request) {
-        if (!Validator.isValidNotificationType(request.getType())) {
+        if (Validator.isValidNotificationType(request.getType())) {
             log.error("Invalid notification type");
             return;
         }
@@ -121,7 +121,7 @@ public class NotificationService implements INotificationService{
     @Override
     @Transactional
     public void pushNotifications(List<UUID> ids, String type, String imageUrl, String title, String body, Map<String, String> data) {
-        if(!Validator.isValidNotificationType(type)) {
+        if(Validator.isValidNotificationType(type)) {
             throw new RuntimeException("Invalid notification type");
         }
         if (ids.isEmpty()) {
