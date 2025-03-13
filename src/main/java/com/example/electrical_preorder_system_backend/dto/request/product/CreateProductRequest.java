@@ -1,6 +1,6 @@
-package com.example.electrical_preorder_system_backend.dto.request;
+package com.example.electrical_preorder_system_backend.dto.request.product;
 
-import com.example.electrical_preorder_system_backend.dto.response.CategoryDTO;
+import com.example.electrical_preorder_system_backend.dto.response.category.CategoryDTO;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 

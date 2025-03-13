@@ -1,4 +1,4 @@
-package com.example.electrical_preorder_system_backend.dto.response;
+package com.example.electrical_preorder_system_backend.dto.response.campaign_stage;
 
 import com.example.electrical_preorder_system_backend.enums.CampaignStageStatus;
 import lombok.Data;

@@ -1,6 +1,6 @@
 package com.example.electrical_preorder_system_backend.mapper;
 
-import com.example.electrical_preorder_system_backend.dto.response.CategoryDTO;
+import com.example.electrical_preorder_system_backend.dto.response.category.CategoryDTO;
 import com.example.electrical_preorder_system_backend.entity.Category;
 
 public class CategoryMapper {

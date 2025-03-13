@@ -1,6 +1,6 @@
 package com.example.electrical_preorder_system_backend.dto.cache;
 
-import com.example.electrical_preorder_system_backend.dto.response.ProductDTO;
+import com.example.electrical_preorder_system_backend.dto.response.product.ProductDTO;
 import lombok.Data;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;

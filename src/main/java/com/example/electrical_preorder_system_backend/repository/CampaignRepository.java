@@ -23,5 +23,8 @@ public interface CampaignRepository extends JpaRepository<Campaign, UUID>, JpaSp
             "WHERE is_deleted = false AND id = ?1 ", nativeQuery = true)
     Campaign findActiveCampaignById(UUID id);
 
+    @Query(value = "SELECT * FROM campaign WHERE is_deleted = false AND product_id = ?1", nativeQuery = true)
+    List<Campaign> findActiveCampaignsByProductId(UUID productId);
+
     Campaign findByName(String name);
 }

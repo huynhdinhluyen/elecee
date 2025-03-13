@@ -1,4 +1,4 @@
-package com.example.electrical_preorder_system_backend.dto.response;
+package com.example.electrical_preorder_system_backend.dto.response.product_images;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

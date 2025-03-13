@@ -1,6 +1,6 @@
 package com.example.electrical_preorder_system_backend.mapper;
 
-import com.example.electrical_preorder_system_backend.dto.response.CampaignDTO;
+import com.example.electrical_preorder_system_backend.dto.response.campaign.CampaignDTO;
 import com.example.electrical_preorder_system_backend.entity.Campaign;
 
 public class CampaignMapper {

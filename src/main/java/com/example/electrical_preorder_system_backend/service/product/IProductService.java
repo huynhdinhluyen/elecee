@@ -1,9 +1,10 @@
 package com.example.electrical_preorder_system_backend.service.product;
 
 import com.example.electrical_preorder_system_backend.dto.filter.ProductFilterCriteria;
-import com.example.electrical_preorder_system_backend.dto.request.CreateProductRequest;
-import com.example.electrical_preorder_system_backend.dto.request.UpdateProductRequest;
-import com.example.electrical_preorder_system_backend.dto.response.ProductDTO;
+import com.example.electrical_preorder_system_backend.dto.request.product.CreateProductRequest;
+import com.example.electrical_preorder_system_backend.dto.request.product.UpdateProductRequest;
+import com.example.electrical_preorder_system_backend.dto.response.product.ProductDTO;
+import com.example.electrical_preorder_system_backend.dto.response.product.ProductDetailDTO;
 import com.example.electrical_preorder_system_backend.entity.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +29,8 @@ public interface IProductService {
     void clearProductCache();
 
     Product getProductBySlug(String slug);
+
+    ProductDetailDTO getProductDetailWithCampaigns(String slug);
 
     void deleteProducts(List<UUID> ids);
 }
