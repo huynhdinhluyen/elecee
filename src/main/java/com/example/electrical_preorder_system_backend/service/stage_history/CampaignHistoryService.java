@@ -1,6 +1,6 @@
 package com.example.electrical_preorder_system_backend.service.stage_history;
 
-import com.example.electrical_preorder_system_backend.dto.response.StageHistoryDTO;
+import com.example.electrical_preorder_system_backend.dto.response.stage_history.StageHistoryDTO;
 import com.example.electrical_preorder_system_backend.entity.Campaign;
 import com.example.electrical_preorder_system_backend.entity.StageHistory;
 import com.example.electrical_preorder_system_backend.exception.ResourceNotFoundException;

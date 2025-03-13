@@ -1,13 +1,13 @@
 package com.example.electrical_preorder_system_backend.controller;
 
 import com.example.electrical_preorder_system_backend.dto.filter.CampaignFilterCriteria;
-import com.example.electrical_preorder_system_backend.dto.request.CreateCampaignRequest;
-import com.example.electrical_preorder_system_backend.dto.request.CreateCampaignStageRequest;
-import com.example.electrical_preorder_system_backend.dto.request.UpdateCampaignRequest;
-import com.example.electrical_preorder_system_backend.dto.request.UpdateCampaignStageRequest;
+import com.example.electrical_preorder_system_backend.dto.request.campaign.CreateCampaignRequest;
+import com.example.electrical_preorder_system_backend.dto.request.campaign.UpdateCampaignRequest;
+import com.example.electrical_preorder_system_backend.dto.request.campaign_stage.CreateCampaignStageRequest;
+import com.example.electrical_preorder_system_backend.dto.request.campaign_stage.UpdateCampaignStageRequest;
 import com.example.electrical_preorder_system_backend.dto.response.ApiResponse;
-import com.example.electrical_preorder_system_backend.dto.response.CampaignDTO;
-import com.example.electrical_preorder_system_backend.dto.response.StageHistoryDTO;
+import com.example.electrical_preorder_system_backend.dto.response.campaign.CampaignDTO;
+import com.example.electrical_preorder_system_backend.dto.response.stage_history.StageHistoryDTO;
 import com.example.electrical_preorder_system_backend.entity.Campaign;
 import com.example.electrical_preorder_system_backend.entity.CampaignStage;
 import com.example.electrical_preorder_system_backend.enums.CampaignStatus;

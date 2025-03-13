@@ -1,6 +1,6 @@
 package com.example.electrical_preorder_system_backend.dto.cache;
 
-import com.example.electrical_preorder_system_backend.dto.response.CampaignDTO;
+import com.example.electrical_preorder_system_backend.dto.response.campaign.CampaignDTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

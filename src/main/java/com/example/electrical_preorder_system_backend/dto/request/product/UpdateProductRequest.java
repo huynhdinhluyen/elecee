@@ -1,7 +1,7 @@
-package com.example.electrical_preorder_system_backend.dto.request;
+package com.example.electrical_preorder_system_backend.dto.request.product;
 
-import com.example.electrical_preorder_system_backend.dto.response.CategoryDTO;
-import com.example.electrical_preorder_system_backend.dto.response.ImageProductDTO;
+import com.example.electrical_preorder_system_backend.dto.response.category.CategoryDTO;
+import com.example.electrical_preorder_system_backend.dto.response.product_images.ImageProductDTO;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;

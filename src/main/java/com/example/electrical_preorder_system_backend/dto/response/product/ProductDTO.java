@@ -1,8 +1,9 @@
-package com.example.electrical_preorder_system_backend.dto.response;
+package com.example.electrical_preorder_system_backend.dto.response.product;
 
+import com.example.electrical_preorder_system_backend.dto.response.category.CategoryDTO;
+import com.example.electrical_preorder_system_backend.dto.response.product_images.ImageProductDTO;
 import com.example.electrical_preorder_system_backend.enums.ProductStatus;
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
