@@ -41,22 +41,22 @@ public class CampaignService implements ICampaignService {
     private final CampaignRepository campaignRepository;
     private final ProductRepository productRepository;
     private final OrderRepository orderRepository;
-//    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public Page<CampaignDTO> getFilteredCampaigns(CampaignFilterCriteria criteria, Pageable pageable) {
         log.info("Searching campaigns with filters: name={}, status={}, productId={}",
                 criteria.getName(), criteria.getStatus(), criteria.getProductId());
 
-//        String cacheKey = generateCacheKey(criteria, pageable);
-//
-//        CachedCampaignPage cachedResult = getCachedCampaignPage(cacheKey);
-//        if (cachedResult != null) {
-//            log.info("Cache hit for campaigns with key: {}", cacheKey);
-//            return cachedResult.toPage();
-//        }
-//
-//        log.info("Cache miss for campaigns, fetching from database");
+        String cacheKey = generateCacheKey(criteria, pageable);
+
+        CachedCampaignPage cachedResult = getCachedCampaignPage(cacheKey);
+        if (cachedResult != null) {
+            log.info("Cache hit for campaigns with key: {}", cacheKey);
+            return cachedResult.toPage();
+        }
+
+        log.info("Cache miss for campaigns, fetching from database");
         Specification<Campaign> spec = Specification.where(CampaignSpecifications.isNotDeleted());
 
         if (criteria.getName() != null && !criteria.getName().trim().isEmpty()) {
@@ -90,49 +90,49 @@ public class CampaignService implements ICampaignService {
         Page<CampaignDTO> resultPage = campaignRepository.findAll(spec, pageable)
                 .map(CampaignMapper::toCampaignDTO);
 
-//        cacheCampaignPage(cacheKey, resultPage);
+        cacheCampaignPage(cacheKey, resultPage);
 
         return resultPage;
     }
 
-//    private String generateCacheKey(CampaignFilterCriteria criteria, Pageable pageable) {
-//        return "campaigns-filtered-" +
-//                (criteria.getName() != null ? criteria.getName() : "") + "-" +
-//                (criteria.getStatus() != null ? criteria.getStatus() : "") + "-" +
-//                (criteria.getProductId() != null ? criteria.getProductId() : "") + "-" +
-//                (criteria.getStartDateFrom() != null ? criteria.getStartDateFrom() : "") + "-" +
-//                (criteria.getStartDateTo() != null ? criteria.getStartDateTo() : "") + "-" +
-//                (criteria.getEndDateFrom() != null ? criteria.getEndDateFrom() : "") + "-" +
-//                (criteria.getEndDateTo() != null ? criteria.getEndDateTo() : "") + "-" +
-//                pageable.getPageNumber() + "-" +
-//                pageable.getPageSize() + "-" +
-//                pageable.getSort();
-//    }
-//
-//    private CachedCampaignPage getCachedCampaignPage(String key) {
-//        try {
-//            Object value = redisTemplate.opsForValue().get(key);
-//            if (value instanceof CachedCampaignPage) {
-//                return (CachedCampaignPage) value;
-//            }
-//        } catch (Exception e) {
-//            log.error("Error retrieving cached campaign page: {}", e.getMessage());
-//        }
-//        return null;
-//    }
-//
-//    private void cacheCampaignPage(String key, Page<CampaignDTO> page) {
-//        try {
-//            CachedCampaignPage cachedPage = CachedCampaignPage.from(page);
-//            redisTemplate.opsForValue().set(key, cachedPage, 60, TimeUnit.MINUTES);
-//            log.info("Cached campaign page with key: {}", key);
-//        } catch (Exception e) {
-//            log.error("Error caching campaign page: {}", e.getMessage());
-//        }
-//    }
+    private String generateCacheKey(CampaignFilterCriteria criteria, Pageable pageable) {
+        return "campaigns-filtered-" +
+                (criteria.getName() != null ? criteria.getName() : "") + "-" +
+                (criteria.getStatus() != null ? criteria.getStatus() : "") + "-" +
+                (criteria.getProductId() != null ? criteria.getProductId() : "") + "-" +
+                (criteria.getStartDateFrom() != null ? criteria.getStartDateFrom() : "") + "-" +
+                (criteria.getStartDateTo() != null ? criteria.getStartDateTo() : "") + "-" +
+                (criteria.getEndDateFrom() != null ? criteria.getEndDateFrom() : "") + "-" +
+                (criteria.getEndDateTo() != null ? criteria.getEndDateTo() : "") + "-" +
+                pageable.getPageNumber() + "-" +
+                pageable.getPageSize() + "-" +
+                pageable.getSort();
+    }
+
+    private CachedCampaignPage getCachedCampaignPage(String key) {
+        try {
+            Object value = redisTemplate.opsForValue().get(key);
+            if (value instanceof CachedCampaignPage) {
+                return (CachedCampaignPage) value;
+            }
+        } catch (Exception e) {
+            log.error("Error retrieving cached campaign page: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    private void cacheCampaignPage(String key, Page<CampaignDTO> page) {
+        try {
+            CachedCampaignPage cachedPage = CachedCampaignPage.from(page);
+            redisTemplate.opsForValue().set(key, cachedPage, 60, TimeUnit.MINUTES);
+            log.info("Cached campaign page with key: {}", key);
+        } catch (Exception e) {
+            log.error("Error caching campaign page: {}", e.getMessage());
+        }
+    }
 
     @Override
-//    @Cacheable(value = "campaigns", key = "'campaign-' + #id")
+    @Cacheable(value = "campaigns", key = "'campaign-' + #id")
     public CampaignDTO getCampaignById(UUID id) {
         log.info("Fetching campaign from database with ID: {}", id);
         Campaign campaign = campaignRepository.findById(id)
@@ -164,7 +164,7 @@ public class CampaignService implements ICampaignService {
 
     @Override
     @Transactional
-//    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
+    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
     public Campaign createCampaign(CreateCampaignRequest request) {
         String campaignName = request.getName().trim();
         Campaign oldCampaign = campaignRepository.findByName(campaignName);
@@ -191,13 +191,13 @@ public class CampaignService implements ICampaignService {
 
         newCampaign = campaignRepository.save(newCampaign);
         log.info("Campaign created with id {}", newCampaign.getId());
-//        clearCampaignCache();
+        clearCampaignCache();
         return newCampaign;
     }
 
     @Override
     @Transactional
-//    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
+    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
     public Campaign updateCampaign(UUID id, UpdateCampaignRequest request) {
         Campaign campaign = campaignRepository.findById(id)
                 .filter(c -> !c.isDeleted())
@@ -244,13 +244,13 @@ public class CampaignService implements ICampaignService {
 
         campaign = campaignRepository.save(campaign);
         log.info("Campaign updated with id {}", campaign.getId());
-//        clearCampaignCache();
+        clearCampaignCache();
         return campaign;
     }
 
     @Override
     @Transactional
-//    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
+    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
     public void deleteCampaign(UUID id) {
         Campaign campaign = campaignRepository.findById(id)
                 .filter(c -> !c.isDeleted())
@@ -264,8 +264,8 @@ public class CampaignService implements ICampaignService {
 
         campaign.setDeleted(true);
         campaignRepository.save(campaign);
-//        clearCampaignCache();
-//        log.info("Campaign marked as deleted with id {}", id);
+        clearCampaignCache();
+        log.info("Campaign marked as deleted with id {}", id);
     }
 
     private CampaignStatus determineCampaignStatus(LocalDateTime startDate, LocalDateTime endDate) {
@@ -281,7 +281,7 @@ public class CampaignService implements ICampaignService {
 
     @Override
     @Transactional
-//    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
+    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
     public void updateCampaignStatuses() {
         List<Campaign> campaigns = campaignRepository.findActiveCampaigns();
         LocalDateTime now = LocalDateTime.now();
@@ -299,7 +299,7 @@ public class CampaignService implements ICampaignService {
             }
         }
         campaignRepository.saveAll(campaigns);
-//        clearCampaignCache();
+        clearCampaignCache();
     }
 
     @Override
@@ -310,11 +310,11 @@ public class CampaignService implements ICampaignService {
         return CampaignMapper.toCampaignDTO(campaign);
     }
 
-//    @Override
-//    @CacheEvict(value = "campaigns", allEntries = true)
-//    public void clearCampaignCache() {
-//        log.info("Cleared campaign cache");
-//    }
+    @Override
+    @CacheEvict(value = "campaigns", allEntries = true)
+    public void clearCampaignCache() {
+        log.info("Cleared campaign cache");
+    }
 
     private void validateCampaignDates(LocalDateTime startDate, LocalDateTime endDate) {
         LocalDateTime now = LocalDateTime.now();
@@ -325,4 +325,5 @@ public class CampaignService implements ICampaignService {
             throw new IllegalArgumentException("Campaign start date must be before the end date.");
         }
     }
+
 }

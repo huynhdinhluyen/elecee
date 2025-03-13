@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.UUID;
 
 public interface ICampaignService {
+
     Page<CampaignDTO> getFilteredCampaigns(CampaignFilterCriteria criteria, Pageable pageable);
 
     Campaign createCampaign(CreateCampaignRequest request);
@@ -25,5 +26,6 @@ public interface ICampaignService {
 
     CampaignDTO convertToDto(Campaign campaign);
 
-//    void clearCampaignCache();
+    void clearCampaignCache();
+
 }

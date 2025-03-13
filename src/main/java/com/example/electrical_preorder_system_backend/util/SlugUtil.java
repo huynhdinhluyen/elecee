@@ -4,6 +4,7 @@ import java.text.Normalizer;
 import java.util.Locale;
 
 public class SlugUtil {
+
     public static String generateSlug(String input) {
         if (input == null) {
             return "";
@@ -15,4 +16,5 @@ public class SlugUtil {
                 .replaceAll("^-|-$", "");
         return slug;
     }
+
 }

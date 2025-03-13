@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ICampaignStageService {
+
     List<CampaignStage> getCampaignStagesByCampaignId(UUID campaignId);
 
     CampaignStage getCampaignStageById(UUID id);
@@ -24,4 +25,5 @@ public interface ICampaignStageService {
     List<CampaignStageDTO> getConvertedCampaignStages(UUID id);
 
     CampaignStageDTO convertToDto(CampaignStage stage);
+
 }

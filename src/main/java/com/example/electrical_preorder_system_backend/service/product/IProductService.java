@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface IProductService {
+
     Page<ProductDTO> getProducts(ProductFilterCriteria criteria, Pageable pageable);
 
     Product addProduct(CreateProductRequest request, List<MultipartFile> files);
@@ -26,11 +27,12 @@ public interface IProductService {
 
     ProductDTO convertToDto(Product product);
 
-//    void clearProductCache();
+    void clearProductCache();
 
     Product getProductBySlug(String slug);
 
     ProductDetailDTO getProductDetailWithCampaigns(String slug);
 
     void deleteProducts(List<UUID> ids);
+
 }

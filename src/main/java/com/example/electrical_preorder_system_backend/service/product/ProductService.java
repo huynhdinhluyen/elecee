@@ -47,22 +47,23 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ProductService implements IProductService {
+
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final CampaignRepository campaignRepository;
     private final OrderRepository orderRepository;
     private final CloudinaryService cloudinaryService;
     private final ICampaignStageService campaignStageService;
-//    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public Page<ProductDTO> getProducts(ProductFilterCriteria criteria, Pageable pageable) {
-//        String cacheKey = generateCacheKey(criteria, pageable);
-//
-//        Page<ProductDTO> cachedResult = getCachedProductPage(cacheKey);
-//        if (cachedResult != null) {
-//            return cachedResult;
-//        }
+        String cacheKey = generateCacheKey(criteria, pageable);
+
+        Page<ProductDTO> cachedResult = getCachedProductPage(cacheKey);
+        if (cachedResult != null) {
+            return cachedResult;
+        }
 
         Specification<Product> spec = Specification.where(ProductSpecifications.isNotDeleted());
 
@@ -85,66 +86,66 @@ public class ProductService implements IProductService {
         Page<ProductDTO> result = productRepository.findAll(spec, pageable)
                 .map(this::convertToDto);
 
-//        cacheProductPage(cacheKey, result);
+        cacheProductPage(cacheKey, result);
 
         return result;
     }
 
-//    private String generateCacheKey(ProductFilterCriteria criteria, Pageable pageable) {
-//        StringBuilder sb = new StringBuilder("products-filtered-");
-//        sb.append(criteria.hashCode())
-//                .append('-')
-//                .append(pageable.getPageNumber())
-//                .append('-')
-//                .append(pageable.getPageSize())
-//                .append('-')
-//                .append(pageable.getSort());
-//        return sb.toString();
-//    }
-//
-//    private void cacheProductPage(String key, Page<ProductDTO> productPage) {
-//        try {
-//            CachedProductPage cachedPage = CachedProductPage.from(productPage);
-//            redisTemplate.opsForValue().set(key, cachedPage, 1, TimeUnit.HOURS);
-//            log.debug("Successfully cached product page with key: {}", key);
-//        } catch (Exception ex) {
-//            log.error("Failed to cache product page: {}", ex.getMessage());
-//        }
-//    }
-//
-//    private Page<ProductDTO> getCachedProductPage(String key) {
-//        try {
-//            Object cachedObject = redisTemplate.opsForValue().get(key);
-//            if (cachedObject instanceof CachedProductPage) {
-//                log.debug("Cache hit for key: {}", key);
-//                return ((CachedProductPage) cachedObject).toPage();
-//            }
-//            log.debug("Cache miss for key: {}", key);
-//        } catch (Exception ex) {
-//            log.error("Error retrieving cached product page: {}", ex.getMessage());
-//        }
-//        return null;
-//    }
+    private String generateCacheKey(ProductFilterCriteria criteria, Pageable pageable) {
+        StringBuilder sb = new StringBuilder("products-filtered-");
+        sb.append(criteria.hashCode())
+                .append('-')
+                .append(pageable.getPageNumber())
+                .append('-')
+                .append(pageable.getPageSize())
+                .append('-')
+                .append(pageable.getSort());
+        return sb.toString();
+    }
 
-//    @Override
-//    @CacheEvict(value = {"products"}, allEntries = true)
-//    public void clearProductCache() {
-//        try {
-//            Set<String> keys = redisTemplate.keys("products-filtered-*");
-//            if (!keys.isEmpty()) {
-//                redisTemplate.delete(keys);
-//                log.debug("Cleared {} filtered product cache entries", keys.size());
-//            }
-//
-//            Set<String> detailKeys = redisTemplate.keys("product-detail-*");
-//            if (!detailKeys.isEmpty()) {
-//                redisTemplate.delete(detailKeys);
-//                log.debug("Cleared {} product detail cache entries", detailKeys.size());
-//            }
-//        } catch (Exception ex) {
-//            log.error("Error clearing product cache: {}", ex.getMessage());
-//        }
-//    }
+    private void cacheProductPage(String key, Page<ProductDTO> productPage) {
+        try {
+            CachedProductPage cachedPage = CachedProductPage.from(productPage);
+            redisTemplate.opsForValue().set(key, cachedPage, 1, TimeUnit.HOURS);
+            log.debug("Successfully cached product page with key: {}", key);
+        } catch (Exception ex) {
+            log.error("Failed to cache product page: {}", ex.getMessage());
+        }
+    }
+
+    private Page<ProductDTO> getCachedProductPage(String key) {
+        try {
+            Object cachedObject = redisTemplate.opsForValue().get(key);
+            if (cachedObject instanceof CachedProductPage) {
+                log.debug("Cache hit for key: {}", key);
+                return ((CachedProductPage) cachedObject).toPage();
+            }
+            log.debug("Cache miss for key: {}", key);
+        } catch (Exception ex) {
+            log.error("Error retrieving cached product page: {}", ex.getMessage());
+        }
+        return null;
+    }
+
+    @Override
+    @CacheEvict(value = {"products"}, allEntries = true)
+    public void clearProductCache() {
+        try {
+            Set<String> keys = redisTemplate.keys("products-filtered-*");
+            if (!keys.isEmpty()) {
+                redisTemplate.delete(keys);
+                log.debug("Cleared {} filtered product cache entries", keys.size());
+            }
+
+            Set<String> detailKeys = redisTemplate.keys("product-detail-*");
+            if (!detailKeys.isEmpty()) {
+                redisTemplate.delete(detailKeys);
+                log.debug("Cleared {} product detail cache entries", detailKeys.size());
+            }
+        } catch (Exception ex) {
+            log.error("Error clearing product cache: {}", ex.getMessage());
+        }
+    }
 
     @Override
     public Product getProductBySlug(String slug) {
@@ -156,7 +157,7 @@ public class ProductService implements IProductService {
     }
 
     @Override
-//    @Cacheable(value = "products", key = "'product-detail-' + #slug")
+    @Cacheable(value = "products", key = "'product-detail-' + #slug")
     public ProductDetailDTO getProductDetailWithCampaigns(String slug) {
         log.info("Fetching product detail with campaigns for slug: {}", slug);
 
@@ -204,7 +205,7 @@ public class ProductService implements IProductService {
     }
 
     @Override
-//    @CacheEvict(value = "products", allEntries = true)
+    @CacheEvict(value = "products", allEntries = true)
     public Product addProduct(CreateProductRequest request, List<MultipartFile> files) {
         String productCode = request.getProductCode().trim();
         if (productRepository.existsByProductCode(productCode)) {
@@ -258,14 +259,14 @@ public class ProductService implements IProductService {
         if (request.getPosition() != null) {
             adjustPositions(product, request.getPosition());
         }
-//        clearProductCache();
-//        log.info("Product added and cache cleared for id: {}", product.getId());
+        clearProductCache();
+        log.info("Product added and cache cleared for id: {}", product.getId());
         return product;
     }
 
     @Override
     @Transactional
-//    @CacheEvict(value = "products", allEntries = true)
+    @CacheEvict(value = "products", allEntries = true)
     public Product updateProduct(UpdateProductRequest request, UUID id, List<MultipartFile> files) {
         return productRepository.findById(id)
                 .map(existingProduct -> {
@@ -282,8 +283,8 @@ public class ProductService implements IProductService {
         updateBasicFields(existingProduct, request);
         updateCategory(existingProduct, request);
         updateImageProducts(existingProduct, request, files);
-//        clearProductCache();
-//        log.info("Product updated and cache cleared");
+        clearProductCache();
+        log.info("Product updated and cache cleared");
         return existingProduct;
     }
 
@@ -394,13 +395,13 @@ public class ProductService implements IProductService {
         deleteImagesFromCloudinary(imageUrls);
         product.setDeleted(true);
         productRepository.save(product);
-//        clearProductCache();
-//        log.info("Product marked deleted and cache cleared for id: {}", id);
+        clearProductCache();
+        log.info("Product marked deleted and cache cleared for id: {}", id);
     }
 
     @Override
     @Transactional
-//    @CacheEvict(value = "products", allEntries = true)
+    @CacheEvict(value = "products", allEntries = true)
     public void deleteProducts(List<UUID> ids) {
         List<Product> products = productRepository.findAllById(ids)
                 .stream()
@@ -444,8 +445,8 @@ public class ProductService implements IProductService {
 
         products.forEach(p -> p.setDeleted(true));
         productRepository.saveAll(products);
-//        clearProductCache();
-//        log.info("Multiple products marked deleted and cache cleared for ids: {}", ids);
+        clearProductCache();
+        log.info("Multiple products marked deleted and cache cleared for ids: {}", ids);
     }
 
     @Override
@@ -548,4 +549,5 @@ public class ProductService implements IProductService {
             log.error("Error adjusting product positions for product ID {}: {}", product.getId(), ex.getMessage(), ex);
         }
     }
+
 }

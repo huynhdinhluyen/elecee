@@ -6,5 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ICampaignHistoryService {
+
     List<StageHistoryDTO> getHistoriesByCampaignId(UUID campaignId);
+
 }

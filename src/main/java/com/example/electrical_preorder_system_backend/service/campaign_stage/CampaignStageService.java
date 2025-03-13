@@ -55,7 +55,7 @@ public class CampaignStageService implements ICampaignStageService {
 
     @Override
     @Transactional
-//    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
+    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
     public CampaignStage createCampaignStage(CreateCampaignStageRequest request, UUID campaignId) {
         Campaign campaign = campaignRepository.findById(campaignId)
                 .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with id: " + campaignId));
@@ -89,7 +89,7 @@ public class CampaignStageService implements ICampaignStageService {
 
     @Override
     @Transactional
-//    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
+    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
     public CampaignStage updateCampaignStage(UUID campaignId, UUID stageId, UpdateCampaignStageRequest request) {
         CampaignStage stage = campaignStageRepository.findById(stageId)
                 .orElseThrow(() -> new ResourceNotFoundException("Campaign stage not found with id: " + stageId));
@@ -132,7 +132,7 @@ public class CampaignStageService implements ICampaignStageService {
 
     @Override
     @Transactional
-//    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
+    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
     public void deleteCampaignStage(UUID campaignId, UUID stageId) {
         Campaign campaign = campaignRepository.findActiveCampaignById(campaignId);
         if (campaign == null) {
@@ -170,7 +170,7 @@ public class CampaignStageService implements ICampaignStageService {
 
     @Scheduled(fixedRate = 60000)
     @Transactional
-//    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
+    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
     public void scheduleUpdateStageStatuses() {
         log.info("Running scheduled task to update campaign stage statuses.");
         LocalDateTime now = LocalDateTime.now();
@@ -200,4 +200,5 @@ public class CampaignStageService implements ICampaignStageService {
             stage.setStatus(CampaignStageStatus.ACTIVE);
         }
     }
+
 }
