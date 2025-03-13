@@ -1,16 +1,15 @@
 package com.example.electrical_preorder_system_backend.repository;
 
 import com.example.electrical_preorder_system_backend.entity.Order;
-import com.example.electrical_preorder_system_backend.enums.OrderStatus;
 import lombok.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import javax.annotation.Nonnull;
-import java.util.List;
 import java.util.UUID;
 
 @Repository
@@ -89,4 +88,11 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
      */
     Order findByUserIdAndCampaignId(UUID userId, UUID campaignId);
 
+    @Query("SELECT COUNT(o) " +
+            "FROM Order o JOIN o.campaign c " +
+            "WHERE c.product.id = :productId AND o.isDeleted = false AND o.status = 'PENDING'")
+    long countPendingOrdersByProductId(@Param("productId") UUID productId);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.campaign.id = :campaignId AND o.isDeleted = false")
+    long countByCampaignIdAndIsDeletedFalse(@Param("campaignId") UUID campaignId);
 }

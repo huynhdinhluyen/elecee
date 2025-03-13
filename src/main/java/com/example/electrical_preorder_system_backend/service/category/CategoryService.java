@@ -8,6 +8,7 @@ import com.example.electrical_preorder_system_backend.exception.AlreadyExistsExc
 import com.example.electrical_preorder_system_backend.exception.ResourceNotFoundException;
 import com.example.electrical_preorder_system_backend.mapper.CategoryMapper;
 import com.example.electrical_preorder_system_backend.repository.CategoryRepository;
+import com.example.electrical_preorder_system_backend.repository.ProductRepository;
 import com.example.electrical_preorder_system_backend.service.product.IProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 public class CategoryService implements ICategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final ProductRepository productRepository;
     private final IProductService productService;
 
     @Override
@@ -118,6 +120,12 @@ public class CategoryService implements ICategoryService {
     public void deleteCategoryById(UUID id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found!"));
+
+        long activeProductCount = productRepository.countByCategoryIdAndIsDeletedFalse(id);
+        if (activeProductCount > 0) {
+            throw new IllegalStateException("Cannot delete category that has " + activeProductCount + " active products. Please delete or move the products first.");
+        }
+
         category.setDeleted(true);
         categoryRepository.save(category);
         productService.clearProductCache();

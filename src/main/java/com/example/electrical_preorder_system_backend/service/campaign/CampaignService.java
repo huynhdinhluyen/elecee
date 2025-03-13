@@ -13,6 +13,7 @@ import com.example.electrical_preorder_system_backend.exception.CampaignStatusEx
 import com.example.electrical_preorder_system_backend.exception.ResourceNotFoundException;
 import com.example.electrical_preorder_system_backend.mapper.CampaignMapper;
 import com.example.electrical_preorder_system_backend.repository.CampaignRepository;
+import com.example.electrical_preorder_system_backend.repository.OrderRepository;
 import com.example.electrical_preorder_system_backend.repository.ProductRepository;
 import com.example.electrical_preorder_system_backend.repository.specification.CampaignSpecifications;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ public class CampaignService implements ICampaignService {
 
     private final CampaignRepository campaignRepository;
     private final ProductRepository productRepository;
+    private final OrderRepository orderRepository;
     private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
@@ -104,7 +106,7 @@ public class CampaignService implements ICampaignService {
                 (criteria.getEndDateTo() != null ? criteria.getEndDateTo() : "") + "-" +
                 pageable.getPageNumber() + "-" +
                 pageable.getPageSize() + "-" +
-                pageable.getSort().toString();
+                pageable.getSort();
     }
 
     private CachedCampaignPage getCachedCampaignPage(String key) {
@@ -253,6 +255,13 @@ public class CampaignService implements ICampaignService {
         Campaign campaign = campaignRepository.findById(id)
                 .filter(c -> !c.isDeleted())
                 .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with id: " + id));
+
+        long activeOrdersCount = orderRepository.countByCampaignIdAndIsDeletedFalse(id);
+        if (activeOrdersCount > 0) {
+            throw new IllegalStateException("Cannot delete campaign with " + activeOrdersCount +
+                    " existing orders. Please complete or cancel all orders first.");
+        }
+
         campaign.setDeleted(true);
         campaignRepository.save(campaign);
         clearCampaignCache();
