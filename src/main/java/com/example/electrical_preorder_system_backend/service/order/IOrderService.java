@@ -1,11 +1,10 @@
 package com.example.electrical_preorder_system_backend.service.order;
 
-import com.example.electrical_preorder_system_backend.dto.request.CreateOrderRequest;
-import com.example.electrical_preorder_system_backend.dto.request.UpdateOrderRequest;
+import com.example.electrical_preorder_system_backend.dto.request.order.CreateOrderRequest;
+import com.example.electrical_preorder_system_backend.dto.request.order.UpdateOrderRequest;
 import com.example.electrical_preorder_system_backend.dto.response.OrderDTO;
 import com.example.electrical_preorder_system_backend.dto.response.OrderListDTO;
 import com.example.electrical_preorder_system_backend.entity.User;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

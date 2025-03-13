@@ -43,6 +43,8 @@ public class Payment {
     @Column(nullable = false)
     private PaymentStatus status;
 
+
+
     @ManyToMany(mappedBy = "payments", fetch = FetchType.LAZY)
     private List<Order> orders = new ArrayList<>();
 

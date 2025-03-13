@@ -1,9 +1,8 @@
-package com.example.electrical_preorder_system_backend.dto.request;
+package com.example.electrical_preorder_system_backend.dto.request.payment;
 import com.example.electrical_preorder_system_backend.enums.PaymentMethod;
 import lombok.*;
 
 import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 
 @AllArgsConstructor

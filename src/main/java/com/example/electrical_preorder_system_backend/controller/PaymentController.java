@@ -1,7 +1,7 @@
 package com.example.electrical_preorder_system_backend.controller;
 
-import com.example.electrical_preorder_system_backend.dto.request.CreatePaymentRequest;
-import com.example.electrical_preorder_system_backend.dto.request.PaymentPayload;
+import com.example.electrical_preorder_system_backend.dto.request.payment.CreatePaymentRequest;
+import com.example.electrical_preorder_system_backend.dto.request.payment.PaymentPayload;
 import com.example.electrical_preorder_system_backend.dto.response.ApiResponse;
 import com.example.electrical_preorder_system_backend.service.payment.PaymentService;
 import com.example.electrical_preorder_system_backend.service.user.UserService;

@@ -1,7 +1,7 @@
 package com.example.electrical_preorder_system_backend.service.payment;
 
-import com.example.electrical_preorder_system_backend.dto.request.CreatePaymentRequest;
-import com.example.electrical_preorder_system_backend.dto.request.PaymentPayload;
+import com.example.electrical_preorder_system_backend.dto.request.payment.CreatePaymentRequest;
+import com.example.electrical_preorder_system_backend.dto.request.payment.PaymentPayload;
 import com.example.electrical_preorder_system_backend.dto.response.PaymentDTO;
 import com.example.electrical_preorder_system_backend.entity.Payment;
 import com.example.electrical_preorder_system_backend.entity.User;
@@ -10,7 +10,6 @@ import vn.payos.type.ItemData;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 public interface IPaymentService {
 

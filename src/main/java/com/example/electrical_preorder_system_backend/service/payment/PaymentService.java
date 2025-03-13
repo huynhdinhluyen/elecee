@@ -1,7 +1,7 @@
 package com.example.electrical_preorder_system_backend.service.payment;
 
-import com.example.electrical_preorder_system_backend.dto.request.CreatePaymentRequest;
-import com.example.electrical_preorder_system_backend.dto.request.PaymentPayload;
+import com.example.electrical_preorder_system_backend.dto.request.payment.CreatePaymentRequest;
+import com.example.electrical_preorder_system_backend.dto.request.payment.PaymentPayload;
 import com.example.electrical_preorder_system_backend.dto.response.PaymentDTO;
 import com.example.electrical_preorder_system_backend.entity.Order;
 import com.example.electrical_preorder_system_backend.entity.Payment;
@@ -124,6 +124,7 @@ public class PaymentService implements IPaymentService {
                     order.setStatus(OrderStatus.CONFIRMED);
                     orderRepository.save(order);
                 }
+
             }else {
                 throw new RuntimeException("Handle webhook failed, payment is not pending");
             }

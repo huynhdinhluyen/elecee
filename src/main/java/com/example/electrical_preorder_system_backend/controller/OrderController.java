@@ -1,7 +1,7 @@
 package com.example.electrical_preorder_system_backend.controller;
 
-import com.example.electrical_preorder_system_backend.dto.request.CreateOrderRequest;
-import com.example.electrical_preorder_system_backend.dto.request.UpdateOrderRequest;
+import com.example.electrical_preorder_system_backend.dto.request.order.CreateOrderRequest;
+import com.example.electrical_preorder_system_backend.dto.request.order.UpdateOrderRequest;
 import com.example.electrical_preorder_system_backend.dto.response.ApiResponse;
 import com.example.electrical_preorder_system_backend.service.order.OrderService;
 import com.example.electrical_preorder_system_backend.service.user.UserService;
