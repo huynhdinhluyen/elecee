@@ -1,4 +1,4 @@
-package com.example.electrical_preorder_system_backend.dto.request;
+package com.example.electrical_preorder_system_backend.dto.request.campaign_stage;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;

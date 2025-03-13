@@ -1,4 +1,4 @@
-package com.example.electrical_preorder_system_backend.config;
+package com.example.electrical_preorder_system_backend.config.swagger;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn;
@@ -29,5 +29,3 @@ import org.springframework.context.annotation.Configuration;
 )
 public class OpenAPIConfig {
 }
-
-

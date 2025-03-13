@@ -2,9 +2,9 @@ package com.example.electrical_preorder_system_backend.service.campaign;
 
 import com.example.electrical_preorder_system_backend.dto.cache.CachedCampaignPage;
 import com.example.electrical_preorder_system_backend.dto.filter.CampaignFilterCriteria;
-import com.example.electrical_preorder_system_backend.dto.request.CreateCampaignRequest;
-import com.example.electrical_preorder_system_backend.dto.request.UpdateCampaignRequest;
-import com.example.electrical_preorder_system_backend.dto.response.CampaignDTO;
+import com.example.electrical_preorder_system_backend.dto.request.campaign.CreateCampaignRequest;
+import com.example.electrical_preorder_system_backend.dto.request.campaign.UpdateCampaignRequest;
+import com.example.electrical_preorder_system_backend.dto.response.campaign.CampaignDTO;
 import com.example.electrical_preorder_system_backend.entity.Campaign;
 import com.example.electrical_preorder_system_backend.entity.Product;
 import com.example.electrical_preorder_system_backend.enums.CampaignStatus;
@@ -13,6 +13,7 @@ import com.example.electrical_preorder_system_backend.exception.CampaignStatusEx
 import com.example.electrical_preorder_system_backend.exception.ResourceNotFoundException;
 import com.example.electrical_preorder_system_backend.mapper.CampaignMapper;
 import com.example.electrical_preorder_system_backend.repository.CampaignRepository;
+import com.example.electrical_preorder_system_backend.repository.OrderRepository;
 import com.example.electrical_preorder_system_backend.repository.ProductRepository;
 import com.example.electrical_preorder_system_backend.repository.specification.CampaignSpecifications;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ public class CampaignService implements ICampaignService {
 
     private final CampaignRepository campaignRepository;
     private final ProductRepository productRepository;
+    private final OrderRepository orderRepository;
     private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
@@ -104,7 +106,7 @@ public class CampaignService implements ICampaignService {
                 (criteria.getEndDateTo() != null ? criteria.getEndDateTo() : "") + "-" +
                 pageable.getPageNumber() + "-" +
                 pageable.getPageSize() + "-" +
-                pageable.getSort().toString();
+                pageable.getSort();
     }
 
     private CachedCampaignPage getCachedCampaignPage(String key) {
@@ -162,7 +164,7 @@ public class CampaignService implements ICampaignService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "campaigns", allEntries = true)
+    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
     public Campaign createCampaign(CreateCampaignRequest request) {
         String campaignName = request.getName().trim();
         Campaign oldCampaign = campaignRepository.findByName(campaignName);
@@ -195,7 +197,7 @@ public class CampaignService implements ICampaignService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "campaigns", allEntries = true)
+    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
     public Campaign updateCampaign(UUID id, UpdateCampaignRequest request) {
         Campaign campaign = campaignRepository.findById(id)
                 .filter(c -> !c.isDeleted())
@@ -248,11 +250,18 @@ public class CampaignService implements ICampaignService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "campaigns", allEntries = true)
+    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
     public void deleteCampaign(UUID id) {
         Campaign campaign = campaignRepository.findById(id)
                 .filter(c -> !c.isDeleted())
                 .orElseThrow(() -> new ResourceNotFoundException("Campaign not found with id: " + id));
+
+        long activeOrdersCount = orderRepository.countByCampaignIdAndIsDeletedFalse(id);
+        if (activeOrdersCount > 0) {
+            throw new IllegalStateException("Cannot delete campaign with " + activeOrdersCount +
+                    " existing orders. Please complete or cancel all orders first.");
+        }
+
         campaign.setDeleted(true);
         campaignRepository.save(campaign);
         clearCampaignCache();
@@ -272,6 +281,7 @@ public class CampaignService implements ICampaignService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"campaigns", "products"}, allEntries = true)
     public void updateCampaignStatuses() {
         List<Campaign> campaigns = campaignRepository.findActiveCampaigns();
         LocalDateTime now = LocalDateTime.now();

@@ -1,8 +1,8 @@
 package com.example.electrical_preorder_system_backend.service.campaign_stage;
 
-import com.example.electrical_preorder_system_backend.dto.request.CreateCampaignStageRequest;
-import com.example.electrical_preorder_system_backend.dto.request.UpdateCampaignStageRequest;
-import com.example.electrical_preorder_system_backend.dto.response.CampaignStageDTO;
+import com.example.electrical_preorder_system_backend.dto.request.campaign_stage.CreateCampaignStageRequest;
+import com.example.electrical_preorder_system_backend.dto.request.campaign_stage.UpdateCampaignStageRequest;
+import com.example.electrical_preorder_system_backend.dto.response.campaign_stage.CampaignStageDTO;
 import com.example.electrical_preorder_system_backend.entity.CampaignStage;
 
 import java.util.List;

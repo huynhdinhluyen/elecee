@@ -2,25 +2,34 @@ package com.example.electrical_preorder_system_backend.service.product;
 
 import com.example.electrical_preorder_system_backend.dto.cache.CachedProductPage;
 import com.example.electrical_preorder_system_backend.dto.filter.ProductFilterCriteria;
-import com.example.electrical_preorder_system_backend.dto.request.CreateProductRequest;
-import com.example.electrical_preorder_system_backend.dto.request.UpdateProductRequest;
-import com.example.electrical_preorder_system_backend.dto.response.CategoryDTO;
-import com.example.electrical_preorder_system_backend.dto.response.ImageProductDTO;
-import com.example.electrical_preorder_system_backend.dto.response.ProductDTO;
+import com.example.electrical_preorder_system_backend.dto.request.product.CreateProductRequest;
+import com.example.electrical_preorder_system_backend.dto.request.product.UpdateProductRequest;
+import com.example.electrical_preorder_system_backend.dto.response.campaign.SimplifiedCampaignDTO;
+import com.example.electrical_preorder_system_backend.dto.response.campaign_stage.CampaignStageDTO;
+import com.example.electrical_preorder_system_backend.dto.response.category.CategoryDTO;
+import com.example.electrical_preorder_system_backend.dto.response.product.ProductDTO;
+import com.example.electrical_preorder_system_backend.dto.response.product.ProductDetailDTO;
+import com.example.electrical_preorder_system_backend.dto.response.product_images.ImageProductDTO;
+import com.example.electrical_preorder_system_backend.entity.Campaign;
 import com.example.electrical_preorder_system_backend.entity.Category;
 import com.example.electrical_preorder_system_backend.entity.ImageProduct;
 import com.example.electrical_preorder_system_backend.entity.Product;
+import com.example.electrical_preorder_system_backend.enums.CampaignStatus;
 import com.example.electrical_preorder_system_backend.enums.ProductStatus;
 import com.example.electrical_preorder_system_backend.exception.AlreadyExistsException;
 import com.example.electrical_preorder_system_backend.exception.ResourceNotFoundException;
+import com.example.electrical_preorder_system_backend.repository.CampaignRepository;
 import com.example.electrical_preorder_system_backend.repository.CategoryRepository;
+import com.example.electrical_preorder_system_backend.repository.OrderRepository;
 import com.example.electrical_preorder_system_backend.repository.ProductRepository;
 import com.example.electrical_preorder_system_backend.repository.specification.ProductSpecifications;
+import com.example.electrical_preorder_system_backend.service.campaign_stage.ICampaignStageService;
 import com.example.electrical_preorder_system_backend.service.cloudinary.CloudinaryService;
 import com.example.electrical_preorder_system_backend.util.SlugUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -29,10 +38,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -43,24 +49,23 @@ import java.util.stream.Collectors;
 public class ProductService implements IProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final CampaignRepository campaignRepository;
+    private final OrderRepository orderRepository;
     private final CloudinaryService cloudinaryService;
+    private final ICampaignStageService campaignStageService;
     private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public Page<ProductDTO> getProducts(ProductFilterCriteria criteria, Pageable pageable) {
-        // Generate cache key
         String cacheKey = generateCacheKey(criteria, pageable);
 
-        // Try to get from cache first
         Page<ProductDTO> cachedResult = getCachedProductPage(cacheKey);
         if (cachedResult != null) {
             return cachedResult;
         }
 
-        // If not in cache, query database
         Specification<Product> spec = Specification.where(ProductSpecifications.isNotDeleted());
 
-        // Apply filters
         if (criteria.getCategory() != null && !criteria.getCategory().isBlank()) {
             spec = spec.and(ProductSpecifications.hasCategory(criteria.getCategory().trim()));
         }
@@ -77,11 +82,9 @@ public class ProductService implements IProductService {
             spec = spec.and(ProductSpecifications.priceLessThanOrEqual(criteria.getMaxPrice()));
         }
 
-        // Execute query and convert to DTOs
         Page<ProductDTO> result = productRepository.findAll(spec, pageable)
                 .map(this::convertToDto);
 
-        // Cache the result
         cacheProductPage(cacheKey, result);
 
         return result;
@@ -124,17 +127,22 @@ public class ProductService implements IProductService {
     }
 
     @Override
+    @CacheEvict(value = {"products"}, allEntries = true)
     public void clearProductCache() {
         try {
             Set<String> keys = redisTemplate.keys("products-filtered-*");
             if (!keys.isEmpty()) {
                 redisTemplate.delete(keys);
                 log.debug("Cleared {} filtered product cache entries", keys.size());
-            } else {
-                log.debug("No filtered product cache entries found to clear");
+            }
+
+            Set<String> detailKeys = redisTemplate.keys("product-detail-*");
+            if (!detailKeys.isEmpty()) {
+                redisTemplate.delete(detailKeys);
+                log.debug("Cleared {} product detail cache entries", detailKeys.size());
             }
         } catch (Exception ex) {
-            log.error("Error clearing filtered product cache: {}", ex.getMessage());
+            log.error("Error clearing product cache: {}", ex.getMessage());
         }
     }
 
@@ -145,6 +153,61 @@ public class ProductService implements IProductService {
             throw new ResourceNotFoundException("Product not found with slug: " + slug);
         }
         return product;
+    }
+
+    @Override
+    @Cacheable(value = "products", key = "'product-detail-' + #slug")
+    public ProductDetailDTO getProductDetailWithCampaigns(String slug) {
+        log.info("Fetching product detail with campaigns for slug: {}", slug);
+
+        // Get the product
+        Product product = getProductBySlug(slug);
+        ProductDTO productDTO = convertToDto(product);
+
+        // Get all campaigns for this product
+        List<Campaign> allCampaigns = campaignRepository.findActiveCampaignsByProductId(product.getId())
+                .stream()
+                .filter(c -> !c.isDeleted())
+                .toList();
+
+        // Find ACTIVE or SCHEDULED campaigns first (priority)
+        Optional<Campaign> activeCampaign = allCampaigns.stream()
+                .filter(c -> c.getStatus() == CampaignStatus.ACTIVE || c.getStatus() == CampaignStatus.SCHEDULED)
+                .max(Comparator.comparing(Campaign::getCreatedAt));
+
+        // If no active/scheduled campaign, get the most recent completed one
+        Campaign campaignToShow = activeCampaign.orElse(
+                allCampaigns.stream()
+                        .max(Comparator.comparing(Campaign::getCreatedAt))
+                        .orElse(null)
+        );
+
+        // Create response with the single campaign
+        List<SimplifiedCampaignDTO> campaignDTOs = new ArrayList<>();
+        if (campaignToShow != null) {
+            SimplifiedCampaignDTO campaignDTO = new SimplifiedCampaignDTO();
+            campaignDTO.setId(campaignToShow.getId());
+            campaignDTO.setName(campaignToShow.getName());
+            campaignDTO.setStartDate(campaignToShow.getStartDate());
+            campaignDTO.setEndDate(campaignToShow.getEndDate());
+            campaignDTO.setMinQuantity(campaignToShow.getMinQuantity());
+            campaignDTO.setMaxQuantity(campaignToShow.getMaxQuantity());
+            campaignDTO.setTotalAmount(campaignToShow.getTotalAmount());
+            campaignDTO.setStatus(campaignToShow.getStatus().name());
+
+            // Get stages for this campaign
+            List<CampaignStageDTO> stages = campaignStageService.getConvertedCampaignStages(campaignToShow.getId());
+            campaignDTO.setStages(stages);
+
+            campaignDTOs.add(campaignDTO);
+        }
+
+        // Create final response
+        ProductDetailDTO detailDTO = new ProductDetailDTO();
+        detailDTO.setProduct(productDTO);
+        detailDTO.setCampaigns(campaignDTOs);
+
+        return detailDTO;
     }
 
     @Override
@@ -316,6 +379,24 @@ public class ProductService implements IProductService {
     public void deleteProductById(UUID id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found!"));
+
+        // Check if product has active campaigns
+        List<Campaign> activeCampaigns = campaignRepository.findActiveCampaignsByProductId(product.getId())
+                .stream()
+                .filter(c -> !c.isDeleted() &&
+                        (c.getStatus() == CampaignStatus.ACTIVE || c.getStatus() == CampaignStatus.SCHEDULED))
+                .toList();
+
+        if (!activeCampaigns.isEmpty()) {
+            throw new IllegalStateException("Cannot delete product with active campaigns. Please cancel or complete all campaigns first.");
+        }
+
+        // Check if product has pending orders
+        long pendingOrdersCount = orderRepository.countPendingOrdersByProductId(product.getId());
+        if (pendingOrdersCount > 0) {
+            throw new IllegalStateException("Cannot delete product with pending orders. Please complete or cancel all orders first.");
+        }
+
         List<String> imageUrls = product.getImageProducts().stream()
                 .filter(img -> !img.isDeleted())
                 .map(ImageProduct::getImageUrl)
@@ -339,6 +420,29 @@ public class ProductService implements IProductService {
 
         if (products.size() != ids.size()) {
             throw new ResourceNotFoundException("Some products were not found or already deleted.");
+        }
+
+        List<Product> productsWithActiveCampaigns = products.stream()
+                .filter(product -> !campaignRepository.findActiveCampaignsByProductId(product.getId())
+                        .stream()
+                        .filter(c -> !c.isDeleted() &&
+                                (c.getStatus() == CampaignStatus.ACTIVE || c.getStatus() == CampaignStatus.SCHEDULED))
+                        .toList()
+                        .isEmpty())
+                .toList();
+
+        if (!productsWithActiveCampaigns.isEmpty()) {
+            throw new IllegalStateException("Cannot delete products with active campaigns: " +
+                    productsWithActiveCampaigns.stream().map(Product::getName).collect(Collectors.joining(", ")));
+        }
+
+        List<Product> productsWithPendingOrders = products.stream()
+                .filter(product -> orderRepository.countPendingOrdersByProductId(product.getId()) > 0)
+                .toList();
+
+        if (!productsWithPendingOrders.isEmpty()) {
+            throw new IllegalStateException("Cannot delete products with pending orders: " +
+                    productsWithPendingOrders.stream().map(Product::getName).collect(Collectors.joining(", ")));
         }
 
         List<String> allImageUrls = products.stream()

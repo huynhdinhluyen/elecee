@@ -1,6 +1,6 @@
 package com.example.electrical_preorder_system_backend.mapper;
 
-import com.example.electrical_preorder_system_backend.dto.response.ProductDTO;
+import com.example.electrical_preorder_system_backend.dto.response.product.ProductDTO;
 import com.example.electrical_preorder_system_backend.entity.Product;
 
 
