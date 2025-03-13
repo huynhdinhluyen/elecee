@@ -1,10 +1,11 @@
 package com.example.electrical_preorder_system_backend.controller;
 
 import com.example.electrical_preorder_system_backend.dto.filter.ProductFilterCriteria;
-import com.example.electrical_preorder_system_backend.dto.request.CreateProductRequest;
-import com.example.electrical_preorder_system_backend.dto.request.UpdateProductRequest;
+import com.example.electrical_preorder_system_backend.dto.request.product.CreateProductRequest;
+import com.example.electrical_preorder_system_backend.dto.request.product.UpdateProductRequest;
 import com.example.electrical_preorder_system_backend.dto.response.ApiResponse;
-import com.example.electrical_preorder_system_backend.dto.response.ProductDTO;
+import com.example.electrical_preorder_system_backend.dto.response.product.ProductDTO;
+import com.example.electrical_preorder_system_backend.dto.response.product.ProductDetailDTO;
 import com.example.electrical_preorder_system_backend.entity.Product;
 import com.example.electrical_preorder_system_backend.service.product.IProductService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -68,14 +69,14 @@ public class ProductController {
 
     @Operation(
             summary = "Get product by slug",
-            description = "Returns a single product by its slug identifier"
+            description = "Returns a single product by its slug identifier, including all associated campaigns and stages"
     )
     @GetMapping("/{slug}")
     public ResponseEntity<ApiResponse> getProductBySlug(
             @Parameter(description = "Product slug", required = true) @PathVariable String slug
     ) {
-        Product product = productService.getProductBySlug(slug);
-        return ResponseEntity.ok(new ApiResponse("Product retrieved successfully", productService.convertToDto(product)));
+        ProductDetailDTO productDetail = productService.getProductDetailWithCampaigns(slug);
+        return ResponseEntity.ok(new ApiResponse("Product retrieved successfully", productDetail));
     }
 
     @Operation(
