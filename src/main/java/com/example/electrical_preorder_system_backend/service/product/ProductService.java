@@ -47,6 +47,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ProductService implements IProductService {
+
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final CampaignRepository campaignRepository;
@@ -160,29 +161,24 @@ public class ProductService implements IProductService {
     public ProductDetailDTO getProductDetailWithCampaigns(String slug) {
         log.info("Fetching product detail with campaigns for slug: {}", slug);
 
-        // Get the product
         Product product = getProductBySlug(slug);
         ProductDTO productDTO = convertToDto(product);
 
-        // Get all campaigns for this product
         List<Campaign> allCampaigns = campaignRepository.findActiveCampaignsByProductId(product.getId())
                 .stream()
                 .filter(c -> !c.isDeleted())
                 .toList();
 
-        // Find ACTIVE or SCHEDULED campaigns first (priority)
         Optional<Campaign> activeCampaign = allCampaigns.stream()
                 .filter(c -> c.getStatus() == CampaignStatus.ACTIVE || c.getStatus() == CampaignStatus.SCHEDULED)
                 .max(Comparator.comparing(Campaign::getCreatedAt));
 
-        // If no active/scheduled campaign, get the most recent completed one
         Campaign campaignToShow = activeCampaign.orElse(
                 allCampaigns.stream()
                         .max(Comparator.comparing(Campaign::getCreatedAt))
                         .orElse(null)
         );
 
-        // Create response with the single campaign
         List<SimplifiedCampaignDTO> campaignDTOs = new ArrayList<>();
         if (campaignToShow != null) {
             SimplifiedCampaignDTO campaignDTO = new SimplifiedCampaignDTO();
@@ -195,14 +191,12 @@ public class ProductService implements IProductService {
             campaignDTO.setTotalAmount(campaignToShow.getTotalAmount());
             campaignDTO.setStatus(campaignToShow.getStatus().name());
 
-            // Get stages for this campaign
             List<CampaignStageDTO> stages = campaignStageService.getConvertedCampaignStages(campaignToShow.getId());
             campaignDTO.setStages(stages);
 
             campaignDTOs.add(campaignDTO);
         }
 
-        // Create final response
         ProductDetailDTO detailDTO = new ProductDetailDTO();
         detailDTO.setProduct(productDTO);
         detailDTO.setCampaigns(campaignDTOs);
@@ -337,7 +331,6 @@ public class ProductService implements IProductService {
                     .collect(Collectors.toSet());
 
             if (product.getImageProducts() != null) {
-                // Find images to delete
                 List<String> imagesToDelete = new ArrayList<>();
                 product.getImageProducts().forEach(img -> {
                     if (!oldImageUrls.contains(img.getImageUrl())) {
@@ -346,7 +339,6 @@ public class ProductService implements IProductService {
                     }
                 });
 
-                // Delete from Cloudinary asynchronously
                 if (!imagesToDelete.isEmpty()) {
                     cloudinaryService.deleteImagesFromCloudinary(imagesToDelete);
                 }
@@ -380,7 +372,6 @@ public class ProductService implements IProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found!"));
 
-        // Check if product has active campaigns
         List<Campaign> activeCampaigns = campaignRepository.findActiveCampaignsByProductId(product.getId())
                 .stream()
                 .filter(c -> !c.isDeleted() &&
@@ -391,7 +382,6 @@ public class ProductService implements IProductService {
             throw new IllegalStateException("Cannot delete product with active campaigns. Please cancel or complete all campaigns first.");
         }
 
-        // Check if product has pending orders
         long pendingOrdersCount = orderRepository.countPendingOrdersByProductId(product.getId());
         if (pendingOrdersCount > 0) {
             throw new IllegalStateException("Cannot delete product with pending orders. Please complete or cancel all orders first.");
@@ -538,4 +528,5 @@ public class ProductService implements IProductService {
             log.error("Error adjusting product positions for product ID {}: {}", product.getId(), ex.getMessage(), ex);
         }
     }
+
 }
