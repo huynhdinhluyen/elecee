@@ -31,7 +31,7 @@ public class CategoryService implements ICategoryService {
     private final IProductService productService;
 
     @Override
-    @Cacheable(value = "categories")
+//    @Cacheable(value = "categories")
     public List<CategoryDTO> getAllCategories() {
         log.info("Fetching active categories from the database.");
         List<Category> categories = categoryRepository.findByIsDeletedFalseOrderByNameAsc();
@@ -41,7 +41,7 @@ public class CategoryService implements ICategoryService {
     }
 
     @Override
-    @Cacheable(value = "categories", key = "'search_' + #searchTerm")
+//    @Cacheable(value = "categories", key = "'search_' + #searchTerm")
     public List<CategoryDTO> searchCategories(String searchTerm) {
         log.info("Searching categories with term: {}", searchTerm);
 
@@ -56,7 +56,7 @@ public class CategoryService implements ICategoryService {
     }
 
     @Override
-    @Cacheable(value = "categories", key = "'category-' + #id")
+//    @Cacheable(value = "categories", key = "'category-' + #id")
     public CategoryDTO getCategoryById(UUID id) {
         log.info("Fetching category from database with ID: {}", id);
         Category category = categoryRepository.findById(id)
@@ -68,7 +68,7 @@ public class CategoryService implements ICategoryService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "categories", allEntries = true)
+//    @CacheEvict(value = "categories", allEntries = true)
     public CategoryDTO createCategory(CreateCategoryRequest request) {
         String trimmedName = request.getName().trim();
 
@@ -89,7 +89,7 @@ public class CategoryService implements ICategoryService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "categories", allEntries = true)
+//    @CacheEvict(value = "categories", allEntries = true)
     public CategoryDTO updateCategory(UUID id, UpdateCategoryRequest request) {
         Category existingCategory = categoryRepository.findById(id)
                 .filter(cat -> !cat.isDeleted())
@@ -110,13 +110,13 @@ public class CategoryService implements ICategoryService {
         existingCategory.setName(newName);
         log.info("Updated category with ID {}: new name {}", id, newName);
         existingCategory = categoryRepository.save(existingCategory);
-        productService.clearProductCache();
-        log.info("Category with ID {} updated and product cache cleared.", id);
+//        productService.clearProductCache();
+//        log.info("Category with ID {} updated and product cache cleared.", id);
         return convertToDto(existingCategory);
     }
 
     @Override
-    @CacheEvict(value = "categories", allEntries = true)
+//    @CacheEvict(value = "categories", allEntries = true)
     public void deleteCategoryById(UUID id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found!"));
@@ -128,8 +128,8 @@ public class CategoryService implements ICategoryService {
 
         category.setDeleted(true);
         categoryRepository.save(category);
-        productService.clearProductCache();
-        log.info("Category with ID {} marked as deleted and product cache cleared.", id);
+//        productService.clearProductCache();
+//        log.info("Category with ID {} marked as deleted and product cache cleared.", id);
     }
 
     private CategoryDTO convertToDto(Category category) {

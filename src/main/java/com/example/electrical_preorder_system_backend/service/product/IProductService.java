@@ -26,7 +26,7 @@ public interface IProductService {
 
     ProductDTO convertToDto(Product product);
 
-    void clearProductCache();
+//    void clearProductCache();
 
     Product getProductBySlug(String slug);
 
