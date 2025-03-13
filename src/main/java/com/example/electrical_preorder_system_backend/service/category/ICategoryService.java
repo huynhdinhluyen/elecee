@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ICategoryService {
+
     List<CategoryDTO> getAllCategories();
 
     List<CategoryDTO> searchCategories(String searchTerm);
@@ -19,4 +20,5 @@ public interface ICategoryService {
     CategoryDTO updateCategory(UUID id, UpdateCategoryRequest request);
 
     void deleteCategoryById(UUID id);
+
 }

@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CampaignHistoryService implements ICampaignHistoryService {
+
     private final StageHistoryRepository stageHistoryRepository;
     private final CampaignRepository campaignRepository;
 
@@ -42,4 +43,5 @@ public class CampaignHistoryService implements ICampaignHistoryService {
         dto.setUpdatedAt(history.getUpdatedAt());
         return dto;
     }
+
 }

@@ -13,7 +13,7 @@ import static org.springframework.data.web.config.EnableSpringDataWebSupport.Pag
 
 @SpringBootApplication
 @EnableJpaAuditing
-//@EnableCaching
+@EnableCaching
 @EnableFeignClients
 @EnableSpringDataWebSupport(pageSerializationMode = VIA_DTO)
 @EnableAsync
