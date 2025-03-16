@@ -1,4 +1,4 @@
-package com.example.electrical_preorder_system_backend.dto.response;
+package com.example.electrical_preorder_system_backend.dto.response.user;
 
 import com.example.electrical_preorder_system_backend.enums.UserRole;
 import com.example.electrical_preorder_system_backend.enums.UserStatus;

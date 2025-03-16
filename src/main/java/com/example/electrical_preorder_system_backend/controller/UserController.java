@@ -1,8 +1,12 @@
 package com.example.electrical_preorder_system_backend.controller;
 
-import com.example.electrical_preorder_system_backend.dto.request.*;
+import com.example.electrical_preorder_system_backend.dto.request.device_token.CreateDeviceTokenRequest;
+import com.example.electrical_preorder_system_backend.dto.request.user.EmailVerificationRequest;
+import com.example.electrical_preorder_system_backend.dto.request.user.UpdatePasswordRequest;
+import com.example.electrical_preorder_system_backend.dto.request.user.UpdateUserRequest;
+import com.example.electrical_preorder_system_backend.dto.request.user.UserSignUpRequest;
 import com.example.electrical_preorder_system_backend.dto.response.ApiResponse;
-import com.example.electrical_preorder_system_backend.dto.response.UserDTO;
+import com.example.electrical_preorder_system_backend.dto.response.user.UserDTO;
 import com.example.electrical_preorder_system_backend.service.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;

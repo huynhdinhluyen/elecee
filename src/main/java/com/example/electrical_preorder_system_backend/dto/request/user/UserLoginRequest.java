@@ -1,4 +1,4 @@
-package com.example.electrical_preorder_system_backend.dto.request;
+package com.example.electrical_preorder_system_backend.dto.request.user;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -8,6 +8,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class LoginTypeRequest {
-    String loginType;
+public class UserLoginRequest {
+    String username;
+    String password;
 }

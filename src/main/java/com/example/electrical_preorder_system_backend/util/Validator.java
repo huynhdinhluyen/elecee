@@ -1,7 +1,7 @@
 package com.example.electrical_preorder_system_backend.util;
 
-import com.example.electrical_preorder_system_backend.dto.request.UpdateUserRequest;
-import com.example.electrical_preorder_system_backend.dto.request.UserSignUpRequest;
+import com.example.electrical_preorder_system_backend.dto.request.user.UpdateUserRequest;
+import com.example.electrical_preorder_system_backend.dto.request.user.UserSignUpRequest;
 import com.example.electrical_preorder_system_backend.entity.User;
 import com.example.electrical_preorder_system_backend.enums.NotificationType;
 import com.example.electrical_preorder_system_backend.enums.OrderStatus;
@@ -137,7 +137,7 @@ public class Validator {
         if (!isValidAddress(request.getAddress())){
             return ErrorMessageFactory.INVALID_ADDRESS_MESSAGE;
         }
-        if (isValidPassword(request.getPassword())){
+        if (!isValidPassword(request.getPassword())){
             return ErrorMessageFactory.INVALID_PASSWORD_MESSAGE;
         }
         return null;
@@ -193,4 +193,20 @@ public class Validator {
         return null;
     }
 
+    public static String verifyPaymentFilter(int page, int size, String sortField, String sortDirection, Class<?> entityClass){
+        if (!isValidField(entityClass, sortField)){
+            return ErrorMessageFactory.INVALID_FIELD_MESSAGE + sortField;
+        }
+        if (!isValidSortDirection(sortDirection)){
+            return ErrorMessageFactory.INVALID_SORT_DIRECTION_MESSAGE;
+        }
+        if (!isValidPage(page)){
+            return ErrorMessageFactory.INVALID_PAGE_MESSAGE;
+        }
+        if (!isValidSize(size)){
+            return ErrorMessageFactory.INVALID_SIZE_MESSAGE;
+        }
+
+        return null;
+    }
 }

@@ -2,19 +2,33 @@ package com.example.electrical_preorder_system_backend.service.payment;
 
 import com.example.electrical_preorder_system_backend.dto.request.payment.CreatePaymentRequest;
 import com.example.electrical_preorder_system_backend.dto.request.payment.PaymentPayload;
-import com.example.electrical_preorder_system_backend.dto.response.PaymentDTO;
+import com.example.electrical_preorder_system_backend.dto.response.payment.PaymentDTO;
+import com.example.electrical_preorder_system_backend.dto.response.payment.PaymentListDTO;
 import com.example.electrical_preorder_system_backend.entity.Order;
 import com.example.electrical_preorder_system_backend.entity.Payment;
 import com.example.electrical_preorder_system_backend.entity.User;
 import com.example.electrical_preorder_system_backend.enums.OrderStatus;
+import com.example.electrical_preorder_system_backend.enums.PaymentMethod;
 import com.example.electrical_preorder_system_backend.enums.PaymentStatus;
+import com.example.electrical_preorder_system_backend.enums.UserRole;
 import com.example.electrical_preorder_system_backend.mapper.PaymentMapper;
 import com.example.electrical_preorder_system_backend.repository.OrderRepository;
 import com.example.electrical_preorder_system_backend.repository.PaymentRepository;
+import com.example.electrical_preorder_system_backend.repository.ProductRepository;
+import com.example.electrical_preorder_system_backend.repository.UserRepository;
+import com.example.electrical_preorder_system_backend.repository.specification.PaymentSpecification;
+import com.example.electrical_preorder_system_backend.service.user.UserService;
+import com.example.electrical_preorder_system_backend.util.Validator;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.payos.PayOS;
@@ -24,6 +38,7 @@ import vn.payos.type.ItemData;
 import vn.payos.type.PaymentData;
 import vn.payos.type.PaymentLinkData;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +65,10 @@ public class PaymentService implements IPaymentService {
 
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
+    private final ProductRepository productRepository;
+    private final UserService userService;
+    private final UserRepository userRepository;
+
 
     @Override
     @Transactional
@@ -155,6 +174,7 @@ public class PaymentService implements IPaymentService {
             if (paymentLinkData != null && !paymentLinkData.getStatus().equals(payment.getStatus().toString())) {
                 log.info("Payment link information: {}", paymentLinkData.getStatus());
                 payment.setStatus(PaymentStatus.valueOf(paymentLinkData.getStatus()));
+                payment.setDate(LocalDateTime.now());
                 List<Order> orders = payment.getOrders();
                 for (Order order : orders) {
                     order.setStatus(OrderStatus.CONFIRMED);
@@ -168,5 +188,54 @@ public class PaymentService implements IPaymentService {
             log.info("Error while getting payment link information:", e);
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public PaymentListDTO getPayments(int page, int size, String sortDirection, String sortField, UUID productId, BigDecimal amountFrom, BigDecimal amountTo,
+                                      PaymentStatus status, PaymentMethod method, LocalDateTime createdAtFrom, LocalDateTime createdAtTo,UUID userId) throws AccessDeniedException {
+        String verifyFilter = Validator.verifyPaymentFilter(page, size, sortField, sortDirection, Payment.class);
+        if (verifyFilter != null) {
+            throw new RuntimeException(verifyFilter);
+        }
+        Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortField);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Specification<Payment> spec = Specification.where(null);
+        if (productId != null) {
+            try {
+                productRepository.getReferenceById(productId);
+            } catch (Exception e) {
+                throw new RuntimeException("Product not found");
+            }
+            spec = spec.and(PaymentSpecification.hasProductId(productId));
+        }
+
+        User authenticatedUser = userService.getAuthenticatedUser();
+        if (userId != null){
+            if (!authenticatedUser.getId().equals(userId) && !authenticatedUser.getRole().equals(UserRole.ROLE_ADMIN)){
+                throw new AccessDeniedException("Access denied");
+            }
+            spec = spec.and(PaymentSpecification.hasUserId(userId));
+        }else {
+            if (!authenticatedUser.getRole().equals(UserRole.ROLE_ADMIN)){
+                throw new AccessDeniedException("Access denied");
+            }
+        }
+        spec = amountFrom != null ? spec.and(PaymentSpecification.hasAmountGreaterThan(amountFrom)) : spec;
+        spec = amountTo != null ? spec.and(PaymentSpecification.hasAmountLessThan(amountTo)) : spec;
+        spec = status != null ? spec.and(PaymentSpecification.hasStatus(status)) : spec;
+        spec = method != null ? spec.and(PaymentSpecification.hasMethod(method)) : spec;
+        spec = createdAtFrom != null ? spec.and(PaymentSpecification.createdAtFrom(createdAtFrom)) : spec;
+        spec = createdAtTo != null ? spec.and(PaymentSpecification.createdAtTo(createdAtTo)) : spec;
+        Page<Payment> payments = paymentRepository.findAll(spec, pageable);
+        BigDecimal totalAmount = payments.stream().map(Payment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return PaymentMapper.toPaymentListDTO(
+                payments.getContent(),
+                totalAmount.longValue(),
+                payments.getTotalPages(),
+                payments.getTotalElements(),
+                payments.getNumber(),
+                payments.getSize()
+        );
     }
 }

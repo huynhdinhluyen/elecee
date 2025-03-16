@@ -1,7 +1,7 @@
 package com.example.electrical_preorder_system_backend.mapper;
 
-import com.example.electrical_preorder_system_backend.dto.response.UserDTO;
-import com.example.electrical_preorder_system_backend.dto.response.UserListDTO;
+import com.example.electrical_preorder_system_backend.dto.response.user.UserDTO;
+import com.example.electrical_preorder_system_backend.dto.response.user.UserListDTO;
 import com.example.electrical_preorder_system_backend.entity.User;
 
 import java.util.List;

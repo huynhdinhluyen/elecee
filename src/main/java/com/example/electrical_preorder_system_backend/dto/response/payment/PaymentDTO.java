@@ -1,4 +1,4 @@
-package com.example.electrical_preorder_system_backend.dto.response;
+package com.example.electrical_preorder_system_backend.dto.response.payment;
 
 import com.example.electrical_preorder_system_backend.enums.PaymentMethod;
 import com.example.electrical_preorder_system_backend.enums.PaymentStatus;

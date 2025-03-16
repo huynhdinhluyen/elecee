@@ -1,4 +1,4 @@
-package com.example.electrical_preorder_system_backend.dto.response;
+package com.example.electrical_preorder_system_backend.dto.response.payment;
 
 import lombok.Builder;
 import lombok.Data;

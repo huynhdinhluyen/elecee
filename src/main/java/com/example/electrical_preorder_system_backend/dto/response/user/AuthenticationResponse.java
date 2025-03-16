@@ -1,4 +1,4 @@
-package com.example.electrical_preorder_system_backend.dto.request;
+package com.example.electrical_preorder_system_backend.dto.response.user;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -8,7 +8,6 @@ import lombok.experimental.FieldDefaults;
 @Setter
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@ToString
-public class EmailVerificationRequest {
-    String token;
+public class AuthenticationResponse {
+    String accessToken;
 }

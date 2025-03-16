@@ -3,11 +3,15 @@ package com.example.electrical_preorder_system_backend.service.user;
 import com.example.electrical_preorder_system_backend.config.client.GoogleIdentityClient;
 import com.example.electrical_preorder_system_backend.config.client.GoogleUserClient;
 import com.example.electrical_preorder_system_backend.config.jwt.JwtUtils;
-import com.example.electrical_preorder_system_backend.dto.request.ExchangeTokenRequest;
-import com.example.electrical_preorder_system_backend.dto.request.UpdatePasswordRequest;
-import com.example.electrical_preorder_system_backend.dto.request.UpdateUserRequest;
-import com.example.electrical_preorder_system_backend.dto.request.UserSignUpRequest;
-import com.example.electrical_preorder_system_backend.dto.response.*;
+import com.example.electrical_preorder_system_backend.dto.request.device_token.ExchangeTokenRequest;
+import com.example.electrical_preorder_system_backend.dto.request.user.UpdatePasswordRequest;
+import com.example.electrical_preorder_system_backend.dto.request.user.UpdateUserRequest;
+import com.example.electrical_preorder_system_backend.dto.request.user.UserSignUpRequest;
+import com.example.electrical_preorder_system_backend.dto.response.device_token.DeviceTokenDTO;
+import com.example.electrical_preorder_system_backend.dto.response.order.OrderListDTO;
+import com.example.electrical_preorder_system_backend.dto.response.user.AuthenticationResponse;
+import com.example.electrical_preorder_system_backend.dto.response.user.UserDTO;
+import com.example.electrical_preorder_system_backend.dto.response.user.UserListDTO;
 import com.example.electrical_preorder_system_backend.entity.DeviceToken;
 import com.example.electrical_preorder_system_backend.entity.Order;
 import com.example.electrical_preorder_system_backend.entity.User;
@@ -74,7 +78,7 @@ public class UserService implements IUserService {
         if (invalidRequestMessage != null) {
             throw new IllegalArgumentException(invalidRequestMessage);
         }
-        if (Validator.isValidUserRole(userSignUpRequest.getRole().trim()) || !userSignUpRequest.getRole().trim().equals(UserRole.ROLE_STAFF.name())) {
+        if (!Validator.isValidUserRole(userSignUpRequest.getRole().trim()) || !userSignUpRequest.getRole().trim().equals(UserRole.ROLE_STAFF.name())) {
             throw new RuntimeException("SignUp failed: Invalid role");
         }
         if (userRepository.existsByUsername(userSignUpRequest.getUsername())) {
@@ -98,11 +102,6 @@ public class UserService implements IUserService {
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();
-            // Upload avatar
-            if (userSignUpRequest.getAvatar() != null) {
-                CompletableFuture<String> avatar = cloudinaryService.uploadFileAsync(userSignUpRequest.getAvatar());
-                user.setAvatar(avatar.join());
-            }
 
             // Send email verification
             emailService.sendEmail(user.getEmail(),

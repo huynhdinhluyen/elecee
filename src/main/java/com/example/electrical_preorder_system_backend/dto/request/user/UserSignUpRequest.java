@@ -1,4 +1,4 @@
-package com.example.electrical_preorder_system_backend.dto.request;
+package com.example.electrical_preorder_system_backend.dto.request.user;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -18,5 +18,4 @@ public class UserSignUpRequest {
     String address;
     String role;
     boolean active;
-    MultipartFile avatar;
 }

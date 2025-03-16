@@ -2,8 +2,8 @@ package com.example.electrical_preorder_system_backend.service.order;
 
 import com.example.electrical_preorder_system_backend.dto.request.order.CreateOrderRequest;
 import com.example.electrical_preorder_system_backend.dto.request.order.UpdateOrderRequest;
-import com.example.electrical_preorder_system_backend.dto.response.OrderDTO;
-import com.example.electrical_preorder_system_backend.dto.response.OrderListDTO;
+import com.example.electrical_preorder_system_backend.dto.response.order.OrderDTO;
+import com.example.electrical_preorder_system_backend.dto.response.order.OrderListDTO;
 import com.example.electrical_preorder_system_backend.entity.Campaign;
 import com.example.electrical_preorder_system_backend.entity.Order;
 import com.example.electrical_preorder_system_backend.entity.Product;

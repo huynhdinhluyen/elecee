@@ -31,9 +31,9 @@ public class RabbitMQConfig {
 
         SimpleMessageConverter converter = new SimpleMessageConverter();
         converter.setAllowedListPatterns(List.of(
-                "com.example.electrical_preorder_system_backend.dto.request.NotificationSendRequest",
+                "com.example.electrical_preorder_system_backend.dto.request.notification.NotificationSendRequest",
                 "com.example.electrical_preorder_system_backend.dto.response.ResponseNotificationDTO",
-                "com.example.electrical_preorder_system_backend.dto.request.UpdateNotificationRequest",
+                "com.example.electrical_preorder_system_backend.dto.request.notification.UpdateNotificationRequest",
                 "java.util.UUID",
                 "java.util.Map",
                 "java.util.HashMap",

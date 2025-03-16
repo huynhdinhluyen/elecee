@@ -1,6 +1,7 @@
-package com.example.electrical_preorder_system_backend.dto.response;
+package com.example.electrical_preorder_system_backend.dto.response.order;
 
 import com.example.electrical_preorder_system_backend.dto.response.campaign.CampaignDTO;
+import com.example.electrical_preorder_system_backend.dto.response.user.UserDTO;
 import lombok.Builder;
 import lombok.Data;
 
