@@ -174,7 +174,7 @@ public class UserService implements IUserService {
 
     @Override
     public void update(UUID id, UpdateUserRequest updateUserRequest, MultipartFile avatar) {
-        if (isValidToUpdate(id)) {
+        if (!isValidToUpdate(id)) {
             throw new AuthorizationDeniedException("Access denied");
         }
         User user = userRepository.getReferenceById(id);
@@ -238,7 +238,7 @@ public class UserService implements IUserService {
 
     @Override
     public void updatePassword(UUID id, UpdatePasswordRequest updatePasswordRequest) {
-        if (isValidToUpdate(id)) {
+        if (!isValidToUpdate(id)) {
             throw new AuthorizationDeniedException("Access denied");
         }
         User user = userRepository.findById(id)
@@ -361,7 +361,8 @@ public class UserService implements IUserService {
         // Customer can only update their own password
         User authenticatedUser = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        return (authenticatedUser.getRole().equals(UserRole.ROLE_CUSTOMER) || authenticatedUser.getRole().equals(UserRole.ROLE_STAFF)) && authenticatedUser.getId().equals(id);
+        return (authenticatedUser.getRole().equals(UserRole.ROLE_CUSTOMER) && authenticatedUser.getId().equals(id))
+                || authenticatedUser.getRole().equals(UserRole.ROLE_STAFF) || authenticatedUser.getRole().equals(UserRole.ROLE_ADMIN);
     }
 
     @Override

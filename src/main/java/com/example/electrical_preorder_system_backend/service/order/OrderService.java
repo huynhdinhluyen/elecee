@@ -4,15 +4,13 @@ import com.example.electrical_preorder_system_backend.dto.request.order.CreateOr
 import com.example.electrical_preorder_system_backend.dto.request.order.UpdateOrderRequest;
 import com.example.electrical_preorder_system_backend.dto.response.order.OrderDTO;
 import com.example.electrical_preorder_system_backend.dto.response.order.OrderListDTO;
-import com.example.electrical_preorder_system_backend.entity.Campaign;
-import com.example.electrical_preorder_system_backend.entity.Order;
-import com.example.electrical_preorder_system_backend.entity.Product;
-import com.example.electrical_preorder_system_backend.entity.User;
+import com.example.electrical_preorder_system_backend.entity.*;
 import com.example.electrical_preorder_system_backend.enums.CampaignStatus;
 import com.example.electrical_preorder_system_backend.enums.OrderStatus;
 import com.example.electrical_preorder_system_backend.enums.UserRole;
 import com.example.electrical_preorder_system_backend.mapper.OrderMapper;
 import com.example.electrical_preorder_system_backend.repository.CampaignRepository;
+import com.example.electrical_preorder_system_backend.repository.CampaignStageRepository;
 import com.example.electrical_preorder_system_backend.repository.OrderRepository;
 import com.example.electrical_preorder_system_backend.repository.ProductRepository;
 import com.example.electrical_preorder_system_backend.repository.specification.OrderSpecification;
@@ -40,6 +38,7 @@ public class OrderService implements IOrderService{
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final CampaignRepository campaignRepository;
+    private final CampaignStageRepository campaignStageRepository;
 
     @Override
     @Transactional
@@ -57,21 +56,23 @@ public class OrderService implements IOrderService{
             Product product = campaign.getProduct();
             product.setQuantity(product.getQuantity() - createOrderRequest.getQuantity());
             productRepository.save(product);
+
             List<Order> orders = orderRepository.findByUserIdAndCampaignId(user.getId(), campaign.getId());
-            Order order = orders.stream().filter(o -> o.getStatus().equals(OrderStatus.PENDING)).findFirst().orElse(null);
-            if (order != null && order.getStatus().equals(OrderStatus.PENDING)) {//If order already exists, update quantity and total amount
-                order.setQuantity(order.getQuantity() + createOrderRequest.getQuantity());
-                order.setTotalAmount(product.getPrice().multiply(BigDecimal.valueOf(order.getQuantity())));
-            }else{//Create new order
-                order = Order.builder()
-                    .user(user)
-                    .campaign(campaign)
-                    .quantity(createOrderRequest.getQuantity())
-                    //Total amount = product price * quantity
-                    .totalAmount(product.getPrice().multiply(BigDecimal.valueOf(createOrderRequest.getQuantity())))
-                    .status(OrderStatus.PENDING)
-                    .build();
-            }
+//            Order order = orders.stream().filter(o -> o.getStatus().equals(OrderStatus.PENDING)).findFirst().orElse(null);
+//            if (order != null && order.getStatus().equals(OrderStatus.PENDING)) {//If order already exists, update quantity and total amount
+//                order.setQuantity(order.getQuantity() + createOrderRequest.getQuantity());
+//                order.setTotalAmount(product.getPrice().multiply(BigDecimal.valueOf(order.getQuantity())));
+//            }else{//Create new order
+
+            Order order = Order.builder()
+                .user(user)
+                .campaign(campaign)
+                .quantity(createOrderRequest.getQuantity())
+                //Total amount = product price * quantity
+                .totalAmount(product.getPrice().multiply(BigDecimal.valueOf(createOrderRequest.getQuantity())))
+                .status(OrderStatus.PENDING)
+                .build();
+//            }
             return OrderMapper.toOrderDTO(orderRepository.save(order));
 
         }catch (Exception e){

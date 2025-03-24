@@ -4,18 +4,10 @@ import com.example.electrical_preorder_system_backend.dto.request.payment.Create
 import com.example.electrical_preorder_system_backend.dto.request.payment.PaymentPayload;
 import com.example.electrical_preorder_system_backend.dto.response.payment.PaymentDTO;
 import com.example.electrical_preorder_system_backend.dto.response.payment.PaymentListDTO;
-import com.example.electrical_preorder_system_backend.entity.Order;
-import com.example.electrical_preorder_system_backend.entity.Payment;
-import com.example.electrical_preorder_system_backend.entity.User;
-import com.example.electrical_preorder_system_backend.enums.OrderStatus;
-import com.example.electrical_preorder_system_backend.enums.PaymentMethod;
-import com.example.electrical_preorder_system_backend.enums.PaymentStatus;
-import com.example.electrical_preorder_system_backend.enums.UserRole;
+import com.example.electrical_preorder_system_backend.entity.*;
+import com.example.electrical_preorder_system_backend.enums.*;
 import com.example.electrical_preorder_system_backend.mapper.PaymentMapper;
-import com.example.electrical_preorder_system_backend.repository.OrderRepository;
-import com.example.electrical_preorder_system_backend.repository.PaymentRepository;
-import com.example.electrical_preorder_system_backend.repository.ProductRepository;
-import com.example.electrical_preorder_system_backend.repository.UserRepository;
+import com.example.electrical_preorder_system_backend.repository.*;
 import com.example.electrical_preorder_system_backend.repository.specification.PaymentSpecification;
 import com.example.electrical_preorder_system_backend.service.user.UserService;
 import com.example.electrical_preorder_system_backend.util.Validator;
@@ -48,6 +40,8 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class PaymentService implements IPaymentService {
+
+    private final CampaignStageRepository campaignStageRepository;
 
     private static final int MAX_RETRY_CREATE_PAYMENT = 10;
 
@@ -179,6 +173,20 @@ public class PaymentService implements IPaymentService {
                 for (Order order : orders) {
                     order.setStatus(OrderStatus.CONFIRMED);
                     orderRepository.save(order);
+                }
+                if (payment.getStatus().equals(PaymentStatus.PAID))
+                {
+                    for (Order order : orders) {
+                        Campaign campaign = order.getCampaign();
+                        List<CampaignStage> stages = campaignStageRepository.findCampaignStagesByCampaign(campaign);
+                        for (CampaignStage stage : stages) {
+                            if (stage.getStatus().equals(CampaignStageStatus.ACTIVE)) {
+                                stage.setQuantitySold(stage.getQuantitySold() + order.getQuantity());
+                                campaignStageRepository.save(stage);
+                                break;
+                            }
+                        }
+                    }
                 }
                 return PaymentMapper.toPaymentDTO(paymentRepository.save(payment));
             }else {
