@@ -1,6 +1,6 @@
-# Electrical Preorder System Backend
+# Elecee
 
-Preorder Management System for managing technology product preorder campaigns, orders, payments and notifications.
+Elecee is a preorder management system for managing technology product preorder campaigns, orders, payments and notifications.
 
 ## Technologies
 
