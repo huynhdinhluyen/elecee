@@ -1,7 +1,7 @@
 package com.example.electrical_preorder_system_backend.service;
 
 import com.example.electrical_preorder_system_backend.config.rabbitmq.RabbitMQConfig;
-import com.example.electrical_preorder_system_backend.dto.request.NotificationSendRequest;
+import com.example.electrical_preorder_system_backend.dto.request.notification.NotificationSendRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;

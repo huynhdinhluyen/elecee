@@ -20,6 +20,7 @@ import com.example.electrical_preorder_system_backend.exception.AlreadyExistsExc
 import com.example.electrical_preorder_system_backend.exception.ResourceNotFoundException;
 import com.example.electrical_preorder_system_backend.repository.CampaignRepository;
 import com.example.electrical_preorder_system_backend.repository.CategoryRepository;
+import com.example.electrical_preorder_system_backend.repository.OrderRepository;
 import com.example.electrical_preorder_system_backend.repository.ProductRepository;
 import com.example.electrical_preorder_system_backend.repository.specification.ProductSpecifications;
 import com.example.electrical_preorder_system_backend.service.campaign_stage.ICampaignStageService;
@@ -46,12 +47,14 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ProductService implements IProductService {
+
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
-    private final CloudinaryService cloudinaryService;
-    private final RedisTemplate<String, Object> redisTemplate;
     private final CampaignRepository campaignRepository;
+    private final OrderRepository orderRepository;
+    private final CloudinaryService cloudinaryService;
     private final ICampaignStageService campaignStageService;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public Page<ProductDTO> getProducts(ProductFilterCriteria criteria, Pageable pageable) {
@@ -158,29 +161,24 @@ public class ProductService implements IProductService {
     public ProductDetailDTO getProductDetailWithCampaigns(String slug) {
         log.info("Fetching product detail with campaigns for slug: {}", slug);
 
-        // Get the product
         Product product = getProductBySlug(slug);
         ProductDTO productDTO = convertToDto(product);
 
-        // Get all campaigns for this product
         List<Campaign> allCampaigns = campaignRepository.findActiveCampaignsByProductId(product.getId())
                 .stream()
                 .filter(c -> !c.isDeleted())
                 .toList();
 
-        // Find ACTIVE or SCHEDULED campaigns first (priority)
         Optional<Campaign> activeCampaign = allCampaigns.stream()
                 .filter(c -> c.getStatus() == CampaignStatus.ACTIVE || c.getStatus() == CampaignStatus.SCHEDULED)
                 .max(Comparator.comparing(Campaign::getCreatedAt));
 
-        // If no active/scheduled campaign, get the most recent completed one
         Campaign campaignToShow = activeCampaign.orElse(
                 allCampaigns.stream()
                         .max(Comparator.comparing(Campaign::getCreatedAt))
                         .orElse(null)
         );
 
-        // Create response with the single campaign
         List<SimplifiedCampaignDTO> campaignDTOs = new ArrayList<>();
         if (campaignToShow != null) {
             SimplifiedCampaignDTO campaignDTO = new SimplifiedCampaignDTO();
@@ -193,14 +191,12 @@ public class ProductService implements IProductService {
             campaignDTO.setTotalAmount(campaignToShow.getTotalAmount());
             campaignDTO.setStatus(campaignToShow.getStatus().name());
 
-            // Get stages for this campaign
             List<CampaignStageDTO> stages = campaignStageService.getConvertedCampaignStages(campaignToShow.getId());
             campaignDTO.setStages(stages);
 
             campaignDTOs.add(campaignDTO);
         }
 
-        // Create final response
         ProductDetailDTO detailDTO = new ProductDetailDTO();
         detailDTO.setProduct(productDTO);
         detailDTO.setCampaigns(campaignDTOs);
@@ -335,7 +331,6 @@ public class ProductService implements IProductService {
                     .collect(Collectors.toSet());
 
             if (product.getImageProducts() != null) {
-                // Find images to delete
                 List<String> imagesToDelete = new ArrayList<>();
                 product.getImageProducts().forEach(img -> {
                     if (!oldImageUrls.contains(img.getImageUrl())) {
@@ -344,9 +339,8 @@ public class ProductService implements IProductService {
                     }
                 });
 
-                // Delete from Cloudinary asynchronously
                 if (!imagesToDelete.isEmpty()) {
-                    deleteImagesFromCloudinary(imagesToDelete);
+                    cloudinaryService.deleteImagesFromCloudinary(imagesToDelete);
                 }
             }
 
@@ -377,12 +371,28 @@ public class ProductService implements IProductService {
     public void deleteProductById(UUID id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found!"));
+
+        List<Campaign> activeCampaigns = campaignRepository.findActiveCampaignsByProductId(product.getId())
+                .stream()
+                .filter(c -> !c.isDeleted() &&
+                        (c.getStatus() == CampaignStatus.ACTIVE || c.getStatus() == CampaignStatus.SCHEDULED))
+                .toList();
+
+        if (!activeCampaigns.isEmpty()) {
+            throw new IllegalStateException("Cannot delete product with active campaigns. Please cancel or complete all campaigns first.");
+        }
+
+        long pendingOrdersCount = orderRepository.countPendingOrdersByProductId(product.getId());
+        if (pendingOrdersCount > 0) {
+            throw new IllegalStateException("Cannot delete product with pending orders. Please complete or cancel all orders first.");
+        }
+
         List<String> imageUrls = product.getImageProducts().stream()
                 .filter(img -> !img.isDeleted())
                 .map(ImageProduct::getImageUrl)
                 .collect(Collectors.toList());
 
-        deleteImagesFromCloudinary(imageUrls);
+        cloudinaryService.deleteImagesFromCloudinary(imageUrls);
         product.setDeleted(true);
         productRepository.save(product);
         clearProductCache();
@@ -402,13 +412,36 @@ public class ProductService implements IProductService {
             throw new ResourceNotFoundException("Some products were not found or already deleted.");
         }
 
+        List<Product> productsWithActiveCampaigns = products.stream()
+                .filter(product -> !campaignRepository.findActiveCampaignsByProductId(product.getId())
+                        .stream()
+                        .filter(c -> !c.isDeleted() &&
+                                (c.getStatus() == CampaignStatus.ACTIVE || c.getStatus() == CampaignStatus.SCHEDULED))
+                        .toList()
+                        .isEmpty())
+                .toList();
+
+        if (!productsWithActiveCampaigns.isEmpty()) {
+            throw new IllegalStateException("Cannot delete products with active campaigns: " +
+                    productsWithActiveCampaigns.stream().map(Product::getName).collect(Collectors.joining(", ")));
+        }
+
+        List<Product> productsWithPendingOrders = products.stream()
+                .filter(product -> orderRepository.countPendingOrdersByProductId(product.getId()) > 0)
+                .toList();
+
+        if (!productsWithPendingOrders.isEmpty()) {
+            throw new IllegalStateException("Cannot delete products with pending orders: " +
+                    productsWithPendingOrders.stream().map(Product::getName).collect(Collectors.joining(", ")));
+        }
+
         List<String> allImageUrls = products.stream()
                 .flatMap(p -> p.getImageProducts().stream())
                 .filter(img -> !img.isDeleted())
                 .map(ImageProduct::getImageUrl)
                 .collect(Collectors.toList());
 
-        deleteImagesFromCloudinary(allImageUrls);
+        cloudinaryService.deleteImagesFromCloudinary(allImageUrls);
 
         products.forEach(p -> p.setDeleted(true));
         productRepository.saveAll(products);
@@ -462,27 +495,6 @@ public class ProductService implements IProductService {
         return dto;
     }
 
-    private void deleteImagesFromCloudinary(List<String> imageUrls) {
-        if (imageUrls == null || imageUrls.isEmpty()) return;
-
-        List<CompletableFuture<Boolean>> deleteFutures = imageUrls.stream()
-                .map(cloudinaryService::deleteImageAsync)
-                .toList();
-
-        CompletableFuture.allOf(deleteFutures.toArray(new CompletableFuture[0]))
-                .thenAccept(v -> {
-                    long successCount = deleteFutures.stream()
-                            .map(CompletableFuture::join)
-                            .filter(success -> success)
-                            .count();
-                    log.info("Deleted {}/{} images from Cloudinary", successCount, imageUrls.size());
-                })
-                .exceptionally(ex -> {
-                    log.error("Error deleting images from Cloudinary", ex);
-                    return null;
-                });
-    }
-
     private String generateUniqueSlug(String name) {
         String baseSlug = SlugUtil.generateSlug(name);
         String uniqueSlug = baseSlug;
@@ -516,4 +528,5 @@ public class ProductService implements IProductService {
             log.error("Error adjusting product positions for product ID {}: {}", product.getId(), ex.getMessage(), ex);
         }
     }
+
 }

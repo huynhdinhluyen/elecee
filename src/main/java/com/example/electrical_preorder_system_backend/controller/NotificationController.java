@@ -1,7 +1,7 @@
 package com.example.electrical_preorder_system_backend.controller;
 
-import com.example.electrical_preorder_system_backend.dto.request.NotificationSendRequest;
-import com.example.electrical_preorder_system_backend.dto.request.UpdateNotificationRequest;
+import com.example.electrical_preorder_system_backend.dto.request.notification.NotificationSendRequest;
+import com.example.electrical_preorder_system_backend.dto.request.notification.UpdateNotificationRequest;
 import com.example.electrical_preorder_system_backend.dto.response.ApiResponse;
 import com.example.electrical_preorder_system_backend.service.RabbitMQService;
 import com.example.electrical_preorder_system_backend.service.notification.NotificationService;

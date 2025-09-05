@@ -1,7 +1,7 @@
 package com.example.electrical_preorder_system_backend.controller;
 
-import com.example.electrical_preorder_system_backend.dto.request.CreateOrderRequest;
-import com.example.electrical_preorder_system_backend.dto.request.UpdateOrderRequest;
+import com.example.electrical_preorder_system_backend.dto.request.order.CreateOrderRequest;
+import com.example.electrical_preorder_system_backend.dto.request.order.UpdateOrderRequest;
 import com.example.electrical_preorder_system_backend.dto.response.ApiResponse;
 import com.example.electrical_preorder_system_backend.service.order.OrderService;
 import com.example.electrical_preorder_system_backend.service.user.UserService;
@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @RestController
@@ -45,12 +46,24 @@ public class OrderController {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @Operation(summary = "Get all orders, only accessible by admin")
     public ResponseEntity<ApiResponse> getOrders(
-            @RequestParam(defaultValue = "all") String status,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "PENDING")String status,
+            @RequestParam(defaultValue = "false") boolean isDeleted,
+            @RequestParam(defaultValue = "createdAt") String sortField,
+            @RequestParam(defaultValue = "ASC") String sortDirection,
+            @RequestParam(required = false) LocalDateTime createdAtMin,
+            @RequestParam(required = false) LocalDateTime createdAtMax,
+            @RequestParam(required = false) UUID userId,
+            @RequestParam(required = false) UUID campaignId,
+            @RequestParam(required = false) LocalDateTime expectedDeliveryDateMin,
+            @RequestParam(required = false) LocalDateTime expectedDeliveryDateMax
     ) {
         return ResponseEntity.ok(new ApiResponse("Orders retrieved successfully",
-                orderService.getOrders(status, page, size)));
+                orderService.getOrders(
+                        page, size, status, isDeleted, sortField, sortDirection, createdAtMin, createdAtMax, userId, campaignId,
+                        expectedDeliveryDateMin, expectedDeliveryDateMax
+                )));
     }
 
     @PatchMapping("/{id}")

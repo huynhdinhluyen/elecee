@@ -28,7 +28,6 @@ import java.util.UUID;
 @Setter
 public class Payment {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
@@ -43,6 +42,8 @@ public class Payment {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PaymentStatus status;
+
+
 
     @ManyToMany(mappedBy = "payments", fetch = FetchType.LAZY)
     private List<Order> orders = new ArrayList<>();

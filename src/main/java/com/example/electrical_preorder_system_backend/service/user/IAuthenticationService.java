@@ -1,7 +1,7 @@
 package com.example.electrical_preorder_system_backend.service.user;
 
-import com.example.electrical_preorder_system_backend.dto.request.UserLoginRequest;
-import com.example.electrical_preorder_system_backend.dto.response.AuthenticationResponse;
+import com.example.electrical_preorder_system_backend.dto.request.user.UserLoginRequest;
+import com.example.electrical_preorder_system_backend.dto.response.user.AuthenticationResponse;
 
 public interface IAuthenticationService {
 

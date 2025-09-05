@@ -1,8 +1,12 @@
 package com.example.electrical_preorder_system_backend.controller;
 
-import com.example.electrical_preorder_system_backend.dto.request.*;
+import com.example.electrical_preorder_system_backend.dto.request.device_token.CreateDeviceTokenRequest;
+import com.example.electrical_preorder_system_backend.dto.request.user.EmailVerificationRequest;
+import com.example.electrical_preorder_system_backend.dto.request.user.UpdatePasswordRequest;
+import com.example.electrical_preorder_system_backend.dto.request.user.UpdateUserRequest;
+import com.example.electrical_preorder_system_backend.dto.request.user.UserSignUpRequest;
 import com.example.electrical_preorder_system_backend.dto.response.ApiResponse;
-import com.example.electrical_preorder_system_backend.dto.response.UserDTO;
+import com.example.electrical_preorder_system_backend.dto.response.user.UserDTO;
 import com.example.electrical_preorder_system_backend.service.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -10,12 +14,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @RestController
@@ -66,20 +70,34 @@ public class UserController {
     @Operation(summary = "Get all users, only accessible by admin")
     public ResponseEntity<ApiResponse> getUsers(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "ROLE_CUSTOMER") String role,
+            @RequestParam(defaultValue = "ACTIVE") String status,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "true") boolean isVerified,
+            @RequestParam(defaultValue = "false") boolean isDeleted,
+            @RequestParam(defaultValue = "createdAt") String sortField,
+            @RequestParam(defaultValue = "ASC") String sortDirection,
+            @RequestParam(required = false) LocalDateTime createdAtMin,
+            @RequestParam(required = false) LocalDateTime createdAtMax,
+            @RequestParam(required = false) boolean isOnline
     ) {
-        Pageable pageable = PageRequest.of(page, size);
-        return ResponseEntity.ok(new ApiResponse("Users retrieved successfully", userService.getUsers(pageable)));
+        return ResponseEntity.ok(new ApiResponse("Users retrieved successfully",
+                userService.getUsers(
+                        page, size, role, status, search, isVerified, isDeleted,
+                        sortField, sortDirection, createdAtMin, createdAtMax, isOnline)
+                ));
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = "multipart/form-data")
     @SecurityRequirement(name = "Bearer Authentication")
     @Operation(summary = "Update user by id")
     public ResponseEntity<ApiResponse> update(
             @NonNull @PathVariable UUID id,
-            @NonNull @RequestBody UpdateUserRequest updateUserRequest
-    ) {
-        userService.update(id, updateUserRequest);
+            @RequestPart("updateUserRequest") UpdateUserRequest updateUserRequest,
+            @RequestPart("avatar") MultipartFile avatar
+            ) {
+        userService.update(id, updateUserRequest, avatar);
         return ResponseEntity.noContent().build();
     }
 

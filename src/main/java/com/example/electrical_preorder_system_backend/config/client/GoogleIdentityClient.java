@@ -1,7 +1,7 @@
 package com.example.electrical_preorder_system_backend.config.client;
 
-import com.example.electrical_preorder_system_backend.dto.request.ExchangeTokenRequest;
-import com.example.electrical_preorder_system_backend.dto.response.ExchangeTokenResponse;
+import com.example.electrical_preorder_system_backend.dto.request.device_token.ExchangeTokenRequest;
+import com.example.electrical_preorder_system_backend.dto.response.user.ExchangeTokenResponse;
 import feign.QueryMap;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;

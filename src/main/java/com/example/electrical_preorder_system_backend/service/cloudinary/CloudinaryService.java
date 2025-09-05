@@ -117,4 +117,26 @@ public class CloudinaryService {
             return null;
         }
     }
+
+    @Async
+    public void deleteImagesFromCloudinary(List<String> imageUrls) {
+        if (imageUrls == null || imageUrls.isEmpty()) return;
+
+        List<CompletableFuture<Boolean>> deleteFutures = imageUrls.stream()
+                .map(this::deleteImageAsync)
+                .toList();
+
+        CompletableFuture.allOf(deleteFutures.toArray(new CompletableFuture[0]))
+                .thenAccept(v -> {
+                    long successCount = deleteFutures.stream()
+                            .map(CompletableFuture::join)
+                            .filter(success -> success)
+                            .count();
+                    log.info("Deleted {}/{} images from Cloudinary", successCount, imageUrls.size());
+                })
+                .exceptionally(ex -> {
+                    log.error("Error deleting images from Cloudinary", ex);
+                    return null;
+                });
+    }
 }

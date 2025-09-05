@@ -1,6 +1,6 @@
 package com.example.electrical_preorder_system_backend.config.client;
 
-import com.example.electrical_preorder_system_backend.dto.response.GoogleUserResponse;
+import com.example.electrical_preorder_system_backend.dto.response.user.GoogleUserResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;

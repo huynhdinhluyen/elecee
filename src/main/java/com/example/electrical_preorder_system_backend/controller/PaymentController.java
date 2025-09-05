@@ -1,8 +1,10 @@
 package com.example.electrical_preorder_system_backend.controller;
 
-import com.example.electrical_preorder_system_backend.dto.request.CreatePaymentRequest;
-import com.example.electrical_preorder_system_backend.dto.request.PaymentPayload;
+import com.example.electrical_preorder_system_backend.dto.request.payment.CreatePaymentRequest;
+import com.example.electrical_preorder_system_backend.dto.request.payment.PaymentPayload;
 import com.example.electrical_preorder_system_backend.dto.response.ApiResponse;
+import com.example.electrical_preorder_system_backend.enums.PaymentMethod;
+import com.example.electrical_preorder_system_backend.enums.PaymentStatus;
 import com.example.electrical_preorder_system_backend.service.payment.PaymentService;
 import com.example.electrical_preorder_system_backend.service.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,9 +15,14 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.nio.file.AccessDeniedException;
+import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -56,5 +63,28 @@ public class PaymentController {
     public ResponseEntity<Map<String,Boolean>> handleWebhook(@RequestBody PaymentPayload payload) {
         log.info("Handling webhook: {}", payload);
         return ResponseEntity.ok(paymentService.handleWebhook(payload));
+    }
+
+    @GetMapping()
+    @SecurityRequirement(name = "Bearer Authentication")
+    @Operation(summary = "Get all payments")
+    public ResponseEntity<ApiResponse> getAllPayments(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "desc") String sortDirection,
+            @RequestParam(defaultValue = "createdAt") String sortField,
+            @RequestParam(required = false) UUID productId,
+            @RequestParam(required = false) BigDecimal amountFrom,
+            @RequestParam(required = false) BigDecimal amountTo,
+            @RequestParam(required = false) PaymentStatus status,
+            @RequestParam(required = false) PaymentMethod method,
+            @RequestParam(required = false) LocalDateTime createdAtFrom,
+            @RequestParam(required = false) LocalDateTime createdAtTo,
+            @RequestParam(required = false) UUID userId
+    ) throws AccessDeniedException {
+        return ResponseEntity.ok(new ApiResponse("Payments retrieved successfully",
+                paymentService.getPayments(
+                        page, size, sortDirection, sortField, productId, amountFrom,
+                        amountTo, status, method, createdAtFrom, createdAtTo, userId)));
     }
 }

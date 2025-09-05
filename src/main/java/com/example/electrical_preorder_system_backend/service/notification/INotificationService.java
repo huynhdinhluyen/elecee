@@ -1,10 +1,8 @@
 package com.example.electrical_preorder_system_backend.service.notification;
 
-import com.example.electrical_preorder_system_backend.dto.request.NotificationSendRequest;
-import com.example.electrical_preorder_system_backend.dto.request.UpdateNotificationRequest;
-import com.example.electrical_preorder_system_backend.dto.response.NotificationListDTO;
-import com.example.electrical_preorder_system_backend.entity.Notification;
-import org.springframework.data.domain.Page;
+import com.example.electrical_preorder_system_backend.dto.request.notification.NotificationSendRequest;
+import com.example.electrical_preorder_system_backend.dto.request.notification.UpdateNotificationRequest;
+import com.example.electrical_preorder_system_backend.dto.response.notification.NotificationListDTO;
 
 import java.util.List;
 import java.util.Map;

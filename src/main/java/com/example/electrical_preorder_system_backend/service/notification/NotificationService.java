@@ -1,9 +1,9 @@
 package com.example.electrical_preorder_system_backend.service.notification;
 
 import com.example.electrical_preorder_system_backend.config.rabbitmq.RabbitMQConfig;
-import com.example.electrical_preorder_system_backend.dto.request.NotificationSendRequest;
-import com.example.electrical_preorder_system_backend.dto.request.UpdateNotificationRequest;
-import com.example.electrical_preorder_system_backend.dto.response.NotificationListDTO;
+import com.example.electrical_preorder_system_backend.dto.request.notification.NotificationSendRequest;
+import com.example.electrical_preorder_system_backend.dto.request.notification.UpdateNotificationRequest;
+import com.example.electrical_preorder_system_backend.dto.response.notification.NotificationListDTO;
 import com.example.electrical_preorder_system_backend.entity.DeviceToken;
 import com.example.electrical_preorder_system_backend.entity.User;
 import com.example.electrical_preorder_system_backend.entity.Notification;

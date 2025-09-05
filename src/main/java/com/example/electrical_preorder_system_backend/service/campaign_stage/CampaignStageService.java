@@ -200,4 +200,5 @@ public class CampaignStageService implements ICampaignStageService {
             stage.setStatus(CampaignStageStatus.ACTIVE);
         }
     }
+
 }

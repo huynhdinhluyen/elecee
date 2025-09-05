@@ -1,7 +1,7 @@
 package com.example.electrical_preorder_system_backend.mapper;
 
-import com.example.electrical_preorder_system_backend.dto.response.NotificationDTO;
-import com.example.electrical_preorder_system_backend.dto.response.NotificationListDTO;
+import com.example.electrical_preorder_system_backend.dto.response.notification.NotificationDTO;
+import com.example.electrical_preorder_system_backend.dto.response.notification.NotificationListDTO;
 import com.example.electrical_preorder_system_backend.entity.Notification;
 
 import java.util.List;
